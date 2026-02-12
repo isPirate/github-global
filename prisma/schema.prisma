@@ -1,0 +1,210 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// 用户表
+model User {
+  id                String   @id @default(uuid())
+  githubId          String   @unique @map("github_id")
+  username          String
+  email             String?
+  avatarUrl         String?  @map("avatar_url") @db.Text
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  installations     GitHubAppInstallation[]
+  repositories      Repository[]
+
+  @@map("users")
+}
+
+// GitHub App 安装记录表
+model GitHubAppInstallation {
+  id                   String   @id @default(uuid())
+  userId               String   @map("user_id")
+  installationId       BigInt   @map("installation_id")
+  githubAccountId      BigInt   @map("github_account_id")
+  accountLogin         String   @map("account_login")
+  accountType          String   @map("account_type") // "user" or "organization"
+  permissions          Json
+  repositorySelection  String   @map("repository_selection") // "all" or "selected"
+  accessToken          String?  @map("access_token") @db.Text
+  expiresAt            DateTime? @map("expires_at")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repositories         Repository[]
+
+  @@unique([installationId])
+  @@index([userId])
+  @@index([installationId])
+  @@map("github_app_installations")
+}
+
+// 仓库表
+model Repository {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  installationId   String   @map("installation_id")
+  githubRepoId     BigInt   @unique @map("github_repo_id")
+  name             String
+  fullName         String   @map("full_name")
+  description      String?  @db.Text
+  language         String?
+  stargazersCount  Int      @default(0) @map("stargazers_count")
+  isActive         Boolean  @default(true) @map("is_active")
+  webhookId        String?  @map("webhook_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  installation     GitHubAppInstallation @relation(fields: [installationId], references: [id], onDelete: Cascade)
+  config           TranslationConfig?
+  engines          TranslationEngine[]
+  tasks            TranslationTask[]
+  files            TranslationFile[]
+
+  @@index([userId])
+  @@index([githubRepoId])
+  @@index([installationId])
+  @@map("repositories")
+}
+
+// 翻译配置表
+model TranslationConfig {
+  id                       String   @id @default(uuid())
+  repositoryId             String   @unique @map("repository_id")
+  baseLanguage             String   @default("auto") @map("base_language")
+  targetLanguages          Json     @map("target_languages") // ["en", "ja", "es"]
+  filePatterns             Json     @map("file_patterns") // ["**/*.md"]
+  excludePatterns          Json?    @map("exclude_patterns") // ["!**/node_modules/**"]
+  targetBranchTemplate     String   @default("i18n/{lang}") @map("target_branch_template")
+  commitMessageTemplate    String   @default("docs: translate to {lang}") @map("commit_message_template")
+  syncStrategy             String   @default("full") @map("sync_strategy") // "full", "incremental", "manual"
+  triggerMode              String   @default("webhook") @map("trigger_mode") // "webhook", "cron", "manual"
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  repository               Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@index([repositoryId])
+  @@map("translation_configs")
+}
+
+// 翻译引擎配置表
+model TranslationEngine {
+  id              String   @id @default(uuid())
+  repositoryId    String   @map("repository_id")
+  engineType      String   @map("engine_type") // "openrouter", "openai", etc.
+  encryptedApiKey String   @map("encrypted_api_key") @db.Text
+  config          Json     // { model: "openai/gpt-4-turbo", temperature: 0.3 }
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  repository      Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@index([repositoryId])
+  @@index([engineType])
+  @@map("translation_engines")
+}
+
+// 翻译任务表
+model TranslationTask {
+  id                String                @id @default(uuid())
+  repositoryId      String                @map("repository_id")
+  triggerType       String                @map("trigger_type") // "webhook", "manual", "cron"
+  triggerCommitSha  String?               @map("trigger_commit_sha")
+  status            String                @default("pending") // "pending", "processing", "completed", "failed"
+  totalFiles        Int                   @default(0) @map("total_files")
+  processedFiles    Int                   @default(0) @map("processed_files")
+  failedFiles       Int                   @default(0) @map("failed_files")
+  totalTokens       Int                   @default(0) @map("total_tokens")
+  estimatedCost     Decimal?              @map("estimated_cost") @db.Decimal(10, 4)
+  errorMessage      String?               @map("error_message") @db.Text
+  startedAt         DateTime?             @map("started_at")
+  completedAt       DateTime?             @map("completed_at")
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+
+  repository        Repository            @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  files             TranslationFile[]
+  history           TranslationHistory[]
+
+  @@index([repositoryId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("translation_tasks")
+}
+
+// 文件翻译记录表
+model TranslationFile {
+  id                    String    @id @default(uuid())
+  taskId                String    @map("task_id")
+  repositoryId          String    @map("repository_id")
+  filePath              String    @map("file_path") @db.VarChar(500)
+  targetLanguage        String    @map("target_language")
+  status                String    @default("pending") // "pending", "processing", "completed", "failed"
+  sourceContentHash     String?   @map("source_content_hash")
+  translatedContentHash String?   @map("translated_content_hash")
+  tokensUsed            Int       @default(0) @map("tokens_used")
+  errorMessage          String?   @map("error_message") @db.Text
+  prNumber              Int?      @map("pr_number")
+  startedAt             DateTime? @map("started_at")
+  completedAt           DateTime? @map("completed_at")
+  createdAt             DateTime  @default(now()) @map("created_at")
+
+  task                  TranslationTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  repository            Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([repositoryId])
+  @@index([filePath])
+  @@index([status])
+  @@map("translation_files")
+}
+
+// 翻译历史表
+model TranslationHistory {
+  id            String   @id @default(uuid())
+  taskId        String   @map("task_id")
+  repositoryId  String   @map("repository_id")
+  eventType     String   @map("event_type") // "created", "started", "completed", "failed"
+  eventData     Json     @map("event_data")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  task          TranslationTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  repository    Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([repositoryId])
+  @@index([createdAt])
+  @@map("translation_history")
+}
+
+// Webhook 事件日志表
+model WebhookEvent {
+  id               String    @id @default(uuid())
+  repositoryId     String?   @map("repository_id")
+  githubDeliveryId String    @unique @map("github_delivery_id")
+  eventType        String    @map("event_type") // "push", "installation", etc.
+  payload          Json
+  processed        Boolean   @default(false)
+  errorMessage     String?   @map("error_message") @db.Text
+  receivedAt       DateTime  @default(now()) @map("received_at")
+  processedAt      DateTime? @map("processed_at")
+
+  @@index([repositoryId])
+  @@index([githubDeliveryId])
+  @@index([processed])
+  @@map("webhook_events")
+}
