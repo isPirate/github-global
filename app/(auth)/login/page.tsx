@@ -1,7 +1,42 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function LoginPage() {
+  const searchParams = useSearchParams()
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    const error = searchParams.get('error')
+    const description = searchParams.get('description')
+    const message = searchParams.get('message')
+
+    if (error) {
+      if (description) {
+        setErrorMessage(decodeURIComponent(description))
+      } else if (message) {
+        setErrorMessage(decodeURIComponent(message))
+      } else {
+        switch (error) {
+          case 'oauth_failed':
+            setErrorMessage('登录失败，请稍后重试。如果是网络问题，请检查您的网络连接。')
+            break
+          case 'missing_code':
+            setErrorMessage('授权码缺失，请重新尝试登录。')
+            break
+          case 'access_denied':
+            setErrorMessage('您已取消授权。')
+            break
+          default:
+            setErrorMessage(`登录失败: ${error}`)
+        }
+      }
+    }
+  }, [searchParams])
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <Card className="w-full max-w-md">
@@ -10,6 +45,12 @@ export default function LoginPage() {
           <CardDescription>自动化翻译您的 GitHub 仓库文档</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {errorMessage && (
+            <div className="rounded-lg border border-red-500/50 bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-400">
+              {errorMessage}
+            </div>
+          )}
+
           <Button asChild className="w-full" size="lg">
             <a href="/api/auth/signin">
               <svg className="mr-2 h-5 w-5" fill="currentColor" viewBox="0 0 24 24">

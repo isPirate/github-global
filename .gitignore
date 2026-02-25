@@ -29,7 +29,8 @@ dist/
 next-env.d.ts
 
 # Prisma
-prisma/migrations/*_*/
+# Don't ignore migrations - they should be committed
+# prisma/migrations/*_*/
 
 # IDE
 .vscode/
