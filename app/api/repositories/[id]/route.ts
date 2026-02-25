@@ -28,7 +28,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Repository not found' }, { status: 404 })
     }
 
-    if (repository.userId !== session.id) {
+    if (repository.userId !== session.user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -37,7 +37,7 @@ export async function DELETE(
       try {
         const [owner, repoName] = repository.fullName.split('/')
         await deleteRepositoryWebhook(
-          repository.installation.installationId.toNumber(),
+          Number(repository.installation.installationId),
           owner,
           repoName,
           repository.webhookId

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db/prisma'
-import { getGitHubAppManager } from '@/lib/github/app'
-import { GitHubPushEvent } from '@/lib/github/types'
-import { TranslationQueue } from '@/lib/translation/queue'
+import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,20 +13,35 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证签名
-    const manager = getGitHubAppManager()
-    const isValid = manager.verifyWebhookSignature(rawBody, signature)
+    const webhookSecret = process.env.GITHUB_APP_WEBHOOK_SECRET
+    if (!webhookSecret) {
+      return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 })
+    }
 
-    if (!isValid) {
+    const signatureParts = signature.split('=')
+    if (signatureParts.length !== 2 || signatureParts[0] !== 'sha256') {
+      return NextResponse.json({ error: 'Invalid signature format' }, { status: 401 })
+    }
+
+    const hmac = crypto.createHmac('sha256', webhookSecret)
+    hmac.update(rawBody)
+    const digest = hmac.digest('hex')
+    const expectedSignature = `sha256=${digest}`
+
+    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
 
     // 解析 payload
-    const payload = JSON.parse(rawBody) as GitHubPushEvent
+    const payload = JSON.parse(rawBody)
     const deliveryId = request.headers.get('x-github-delivery')
+    const eventType = request.headers.get('x-github-event')
 
     if (!deliveryId) {
       return NextResponse.json({ error: 'Missing delivery ID' }, { status: 400 })
     }
+
+    console.log('[Webhook] Received event:', eventType, 'delivery:', deliveryId)
 
     // 检查是否已处理（幂等性）
     const existingEvent = await prisma.webhookEvent.findUnique({
@@ -43,70 +56,60 @@ export async function POST(request: NextRequest) {
     await prisma.webhookEvent.create({
       data: {
         githubDeliveryId: deliveryId,
-        eventType: 'push',
+        eventType: eventType || 'unknown',
         payload: payload as any,
-        repositoryId: payload.repository.id.toString(),
         receivedAt: new Date(),
       },
     })
 
-    // 只处理 push 事件
-    if (payload.ref.startsWith('refs/heads/')) {
-      // 查找仓库
-      const repository = await prisma.repository.findUnique({
-        where: { githubRepoId: BigInt(payload.repository.id) },
-        include: {
-          config: true,
-        },
-      })
+    // 处理 installation 事件
+    if (eventType === 'installation' || eventType === 'installation_repositories') {
+      const installation = payload.installation
+      const sender = payload.sender
 
-      if (repository && repository.config) {
-        // 检查触发模式
-        if (repository.config.triggerMode === 'webhook') {
-          // 提取变更文件
-          const changedFiles: string[] = []
-          for (const commit of payload.commits) {
-            changedFiles.push(...commit.added, ...commit.modified)
-          }
+      if (installation && sender) {
+        // 查找用户
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { githubId: sender.id.toString() },
+              { username: sender.login },
+            ],
+          },
+        })
 
-          // 过滤需要翻译的文件
-          const filePatterns = repository.config.filePatterns as string[]
-          const filesToTranslate = changedFiles.filter((file) => {
-            // 检查文件扩展名
-            if (!file.match(/\.(md|markdown|txt)$/i)) {
-              return false
-            }
+        if (user) {
+          const action = payload.action
 
-            // 检查是否匹配包含模式
-            const isIncluded = filePatterns.some((pattern) => {
-              const regexPattern = pattern.replace(/\*/g, '.*').replace(/\?/g, '.')
-              const regex = new RegExp(regexPattern)
-              return regex.test(file)
-            })
-
-            return isIncluded
-          })
-
-          if (filesToTranslate.length > 0) {
-            // 创建翻译任务
-            const task = await prisma.translationTask.create({
-              data: {
-                repositoryId: repository.id,
-                triggerType: 'webhook',
-                triggerCommitSha: payload.after,
-                status: 'pending',
-                totalFiles: filesToTranslate.length,
+          if (action === 'created' || action === 'added') {
+            // 创建或更新 installation 记录
+            await prisma.gitHubAppInstallation.upsert({
+              where: { installationId: BigInt(installation.id) },
+              create: {
+                userId: user.id,
+                installationId: BigInt(installation.id),
+                githubAccountId: BigInt(sender.id),
+                accountLogin: sender.login,
+                accountType: installation.account_type,
+                permissions: installation.permissions || {},
+                repositorySelection: installation.repository_selection || 'all',
+              },
+              update: {
+                accountLogin: sender.login,
+                accountType: installation.account_type,
+                permissions: installation.permissions || {},
+                repositorySelection: installation.repository_selection || 'all',
               },
             })
 
-            // 添加到队列（异步处理）
-            const queue = TranslationQueue.getInstance()
-            await queue.addTranslationTask(async () => {
-              // TODO: 实现实际的翻译逻辑
-              console.log(`Processing translation task ${task.id} for ${filesToTranslate.length} files`)
+            console.log('[Webhook] Installation created/updated for user:', user.username)
+          } else if (action === 'deleted') {
+            // 删除 installation 记录
+            await prisma.gitHubAppInstallation.deleteMany({
+              where: { installationId: BigInt(installation.id) },
             })
 
-            console.log(`Translation task ${task.id} created for ${filesToTranslate.length} files`)
+            console.log('[Webhook] Installation deleted')
           }
         }
       }
@@ -123,7 +126,19 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Webhook processing error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('[Webhook] Error:', error)
+    return NextResponse.json({ error: 'Internal server error', message: String(error) }, { status: 500 })
   }
+}
+
+// Also handle GET requests for debugging
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    message: 'GitHub Webhook endpoint is ready',
+    method: 'POST',
+    contentType: 'application/json',
+    headers: {
+      'X-Hub-Signature-256': 'sha256=<signature>',
+    },
+  })
 }

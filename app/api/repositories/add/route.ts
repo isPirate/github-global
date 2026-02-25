@@ -21,17 +21,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    console.log('[API] Adding repository:', { githubRepoId, installationId, userId: session.user.id })
+
     // Get installation from database
-    const installation = await prisma.gitHubAppInstallation.findUnique({
-      where: { installationId: BigInt(installationId) },
+    const installation = await prisma.gitHubAppInstallation.findFirst({
+      where: {
+        installationId: BigInt(installationId),
+      },
     })
 
     if (!installation) {
+      console.error('[API] Installation not found:', installationId)
       return NextResponse.json({ error: 'Installation not found' }, { status: 404 })
     }
 
-    if (installation.userId !== session.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    console.log('[API] Found installation:', { installationId: installation.id, userId: installation.userId, sessionUserId: session.user.id })
+
+    // Check if installation belongs to current user
+    if (installation.userId !== session.user.id) {
+      console.error('[API] User mismatch:', { installationUserId: installation.userId, sessionUserId: session.user.id })
+      return NextResponse.json({ error: 'Forbidden - Installation does not belong to you' }, { status: 403 })
     }
 
     // Check if repository already exists
@@ -47,28 +56,10 @@ export async function POST(request: NextRequest) {
     const repoFullName = body.fullName
     const [owner, repoName] = repoFullName.split('/')
 
-    // Create webhook if secret is configured
-    let webhookId: string | undefined
-    const webhookSecret = process.env.GITHUB_APP_WEBHOOK_SECRET
-
-    if (webhookSecret && owner && repoName) {
-      try {
-        webhookId = await createRepositoryWebhook(
-          installation.installationId.toNumber(),
-          owner,
-          repoName,
-          webhookSecret
-        )
-      } catch (error) {
-        console.error('[API] Failed to create webhook:', error)
-        // Continue without webhook
-      }
-    }
-
     // Create repository in database
     const repository = await prisma.repository.create({
       data: {
-        userId: session.id,
+        userId: session.user.id,
         installationId: installation.id,
         githubRepoId: BigInt(githubRepoId),
         name: repoName,
@@ -76,9 +67,10 @@ export async function POST(request: NextRequest) {
         description: body.description || null,
         language: body.language || null,
         stargazersCount: body.stargazersCount || 0,
-        webhookId,
       },
     })
+
+    console.log('[API] Repository created:', repository.id)
 
     return NextResponse.json({
       success: true,
