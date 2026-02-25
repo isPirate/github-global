@@ -52,32 +52,101 @@ export async function exchangeCodeForToken(
   clientId: string,
   clientSecret: string
 ): Promise<GitHubTokenResponse> {
-  const response = await githubFetch('https://github.com/login/oauth/access_token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Accept: 'application/json',
-      'User-Agent': 'GitHub-Global-App',
-    },
-    body: new URLSearchParams({
+  const url = 'https://github.com/login/oauth/access_token'
+  const body = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
+    code,
+  }).toString()
+
+  // Try fetch first
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
+        'User-Agent': 'GitHub-Global-App',
+      },
+      body,
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Token exchange failed: ${response.status} ${errorText}`)
+    }
+
+    const data = await response.json()
+
+    if (data.error) {
+      throw new Error(data.error_description || data.error)
+    }
+
+    return data
+  } catch (error) {
+    console.error('[GitHubFetch] Fetch failed, trying alternative method:', error)
+    // If fetch fails, try with node's https module
+    return exchangeCodeForTokenFallback(code, clientId, clientSecret)
+  }
+}
+
+/**
+ * Fallback method using https module
+ */
+async function exchangeCodeForTokenFallback(
+  code: string,
+  clientId: string,
+  clientSecret: string
+): Promise<GitHubTokenResponse> {
+  return new Promise((resolve, reject) => {
+    const https = require('https')
+    const url = 'https://github.com/login/oauth/access_token'
+
+    const postData = new URLSearchParams({
       client_id: clientId,
       client_secret: clientSecret,
       code,
-    }).toString(),
+    }).toString()
+
+    const options = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+        'User-Agent': 'GitHub-Global-App',
+        'Content-Length': Buffer.byteLength(postData),
+      },
+    }
+
+    const req = https.request(url, options, (res: any) => {
+      let data = ''
+
+      res.on('data', (chunk: any) => {
+        data += chunk
+      })
+
+      res.on('end', () => {
+        try {
+          const result = JSON.parse(data)
+
+          if (result.error) {
+            reject(new Error(result.error_description || result.error))
+          } else {
+            resolve(result)
+          }
+        } catch (error) {
+          reject(new Error(`Failed to parse response: ${data}`))
+        }
+      })
+    })
+
+    req.on('error', (error: Error) => {
+      reject(error)
+    })
+
+    req.write(postData)
+    req.end()
   })
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`Token exchange failed: ${response.status} ${errorText}`)
-  }
-
-  const data = await response.json()
-
-  if (data.error) {
-    throw new Error(data.error_description || data.error)
-  }
-
-  return data
 }
 
 /**

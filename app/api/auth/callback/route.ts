@@ -75,13 +75,14 @@ export async function GET(request: NextRequest) {
 
     console.log('[OAuth] User created/updated:', user.id)
 
-    // 创建 session
+    // 创建 session (包含访问令牌)
     await createSession({
       id: user.id,
       githubId: user.githubId,
       username: user.username,
       email: user.email || '',
       avatarUrl: user.avatarUrl,
+      accessToken: tokenData.access_token,
     })
 
     console.log('[OAuth] Session created, redirecting to dashboard')

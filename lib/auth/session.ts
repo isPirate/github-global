@@ -7,6 +7,7 @@ export interface SessionUser {
   username: string
   email: string | null
   avatarUrl: string | null
+  accessToken?: string // GitHub OAuth access token
 }
 
 export interface Session {

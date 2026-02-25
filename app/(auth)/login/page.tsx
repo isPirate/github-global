@@ -13,8 +13,11 @@ export default function LoginPage() {
     const error = searchParams.get('error')
     const description = searchParams.get('description')
     const message = searchParams.get('message')
+    const relogin = searchParams.get('relogin')
 
-    if (error) {
+    if (relogin === 'true') {
+      setErrorMessage('您的会话已过期，请重新登录以获取最新功能。')
+    } else if (error) {
       if (description) {
         setErrorMessage(decodeURIComponent(description))
       } else if (message) {
