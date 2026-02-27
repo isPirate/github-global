@@ -516,10 +516,13 @@ ${await prisma.translationFile.findMany({
     }
 
     // Update task as completed
+    // Status logic: if all files failed -> 'failed', otherwise -> 'completed'
+    const finalStatus = processedFiles === 0 ? 'failed' : 'completed'
+
     await prisma.translationTask.update({
       where: { id: taskId },
       data: {
-        status: failedFiles > 0 ? 'completed' : 'completed',
+        status: finalStatus,
         processedFiles,
         failedFiles,
         totalTokens,
