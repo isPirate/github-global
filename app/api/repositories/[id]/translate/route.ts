@@ -325,12 +325,24 @@ export async function processTranslationTask(taskId: string, repository: any) {
               tokensUsed: result.usage.totalTokens,
             })
 
-            // Update file record with translated content hash (status will be updated later)
+            // Update file record with translated content hash and mark as completed
             await prisma.translationFile.update({
               where: { id: fileRecord.id },
               data: {
                 translatedContentHash: translatedContentHash,
                 tokensUsed: result.usage.totalTokens,
+                status: 'completed',
+                completedAt: new Date(),
+              },
+            })
+
+            // Update task progress immediately for real-time feedback
+            processedFiles++
+            await prisma.translationTask.update({
+              where: { id: taskId },
+              data: {
+                processedFiles,
+                totalTokens,
               },
             })
           }
@@ -351,6 +363,17 @@ export async function processTranslationTask(taskId: string, repository: any) {
               console.error('Failed to update file record:', e)
             })
           }
+
+          // Update task progress immediately for real-time feedback
+          failedFiles++
+          await prisma.translationTask.update({
+            where: { id: taskId },
+            data: {
+              failedFiles,
+            },
+          }).catch((e) => {
+            console.error('Failed to update task failedFiles count:', e)
+          })
         }
       }
     }
@@ -411,33 +434,35 @@ export async function processTranslationTask(taskId: string, repository: any) {
         // Update latest commit SHA for next language
         latestCommitSha = commit.sha
 
-        // Update file records status
-        await Promise.all(files.map(file =>
-          prisma.translationFile.update({
-            where: { id: file.fileRecordId },
-            data: {
-              status: 'completed',
-              completedAt: new Date(),
-            },
-          })
-        ))
-
-        processedFiles += files.length
+        // Note: file records already marked as completed during translation phase
+        // No need to update status again here
       } catch (error) {
         console.error(`[Translate] Error committing files for ${lang}:`, error)
-        failedFiles += files.length
 
-        // Update file records as failed
+        // Update file records as failed (commit failed after translation succeeded)
         await Promise.all(files.map(file =>
           prisma.translationFile.update({
             where: { id: file.fileRecordId },
             data: {
               status: 'failed',
               errorMessage: `Commit failed: ${error instanceof Error ? error.message : String(error)}`,
-              completedAt: new Date(),
             },
           })
         ))
+
+        // Rollback processedFiles and increment failedFiles
+        // These files were counted as processed during translation, but commit failed
+        const commitFailedFiles = files.length
+        processedFiles -= commitFailedFiles
+        failedFiles += commitFailedFiles
+
+        await prisma.translationTask.update({
+          where: { id: taskId },
+          data: {
+            processedFiles,
+            failedFiles,
+          },
+        })
       }
     }
 
