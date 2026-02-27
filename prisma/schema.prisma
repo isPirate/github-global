@@ -155,8 +155,8 @@ model TranslationFile {
   filePath              String    @map("file_path") @db.VarChar(500)
   targetLanguage        String    @map("target_language")
   status                String    @default("pending") // "pending", "processing", "completed", "failed"
-  sourceContentHash     String?   @map("source_content_hash")
-  translatedContentHash String?   @map("translated_content_hash")
+  sourceContentHash     String?   @map("source_content_hash") @db.Text
+  translatedContentHash String?   @map("translated_content_hash") @db.Text
   tokensUsed            Int       @default(0) @map("tokens_used")
   errorMessage          String?   @map("error_message") @db.Text
   prNumber              Int?      @map("pr_number")

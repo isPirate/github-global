@@ -141,7 +141,12 @@ export async function GET(request: NextRequest) {
         })
 
         if (reposResponse.data.repositories && Array.isArray(reposResponse.data.repositories)) {
-          allRepositories.push(...reposResponse.data.repositories)
+          // Add installation ID to each repository
+          const reposWithInstallation = reposResponse.data.repositories.map((repo: any) => ({
+            ...repo,
+            _installationId: instId, // Store the installation ID that owns this repo
+          }))
+          allRepositories.push(...reposWithInstallation)
         }
       } catch (error) {
         console.error(`[API] Error fetching repos for installation ${instId}:`, error)
@@ -151,6 +156,7 @@ export async function GET(request: NextRequest) {
     console.log(`[API] Total repositories fetched: ${allRepositories.length}`)
 
     // Step 6: Get database installations to get their UUIDs
+    console.log('[API] Looking for installations with IDs:', syncedInstallationIds)
     const activeInstallations = await prisma.gitHubAppInstallation.findMany({
       where: {
         userId: session.user.id,
@@ -159,6 +165,9 @@ export async function GET(request: NextRequest) {
         },
       },
     })
+
+    console.log('[API] Found active installations in DB:', activeInstallations.length)
+    console.log('[API] Active installations:', activeInstallations.map(i => ({ id: i.id, installationId: i.installationId.toString() })))
 
     const installationIds = activeInstallations.map((inst) => inst.id)
 
@@ -180,17 +189,24 @@ export async function GET(request: NextRequest) {
     // Step 7: Auto-sync repositories - create records for new repos
     const dbRepoIds = new Set(dbRepositories.map((r) => r.githubRepoId.toString()))
 
+    console.log('[API] Existing DB repo IDs:', Array.from(dbRepoIds))
+
     for (const repo of allRepositories) {
       const repoId = repo.id.toString()
       if (!dbRepoIds.has(repoId)) {
         // This repository exists in GitHub but not in database, create it
         try {
+          // Use the _installationId we stored earlier
+          const githubInstallationId = repo._installationId
+
+          console.log(`[API] Creating repo ${repo.full_name}, installation ID: ${githubInstallationId}`)
+
           const installation = activeInstallations.find(
-            (inst) => inst.installationId.toString() === repo.installation?.id?.toString()
+            (inst) => inst.installationId.toString() === githubInstallationId.toString()
           )
 
           if (installation) {
-            await prisma.repository.create({
+            const createdRepo = await prisma.repository.create({
               data: {
                 userId: session.user.id,
                 installationId: installation.id,
@@ -203,7 +219,10 @@ export async function GET(request: NextRequest) {
                 isActive: true, // Auto-enable
               },
             })
-            console.log(`[API] Auto-synced repository: ${repo.full_name}`)
+            console.log(`[API] Auto-synced repository: ${repo.full_name}, DB ID: ${createdRepo.id}`)
+          } else {
+            console.error(`[API] Cannot find installation for repo ${repo.full_name}, installation ID: ${githubInstallationId}`)
+            console.error(`[API] Available installations:`, activeInstallations.map(i => i.installationId.toString()))
           }
         } catch (error) {
           console.error(`[API] Failed to create repository ${repo.full_name}:`, error)
@@ -227,6 +246,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Step 9: Re-fetch repositories from database to get the updated list
+    console.log('[API] Querying repositories with installationIds:', installationIds)
     const updatedDbRepositories = await prisma.repository.findMany({
       where: {
         userId: session.user.id,
@@ -239,9 +259,19 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    console.log('[API] Updated DB repositories count:', updatedDbRepositories.length)
+
     // Step 10: Combine GitHub repositories with database repositories
+    console.log('[API] DB Repositories count:', updatedDbRepositories.length)
+    console.log('[API] GitHub Repositories count:', allRepositories.length)
+
     const enrichedRepositories = allRepositories.map((repo: any) => {
       const dbRepo = updatedDbRepositories.find((r) => r.githubRepoId === BigInt(repo.id))
+
+      if (!dbRepo) {
+        console.log('[API] No DB repo found for GitHub repo:', repo.id, repo.full_name)
+      }
+
       return {
         ...repo,
         isActive: dbRepo?.isActive ?? false,

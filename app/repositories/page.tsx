@@ -93,6 +93,14 @@ export default function RepositoriesPage() {
 
       const data: RepositoriesResponse = await response.json()
       setInstallations(data.installations)
+
+      // Log for debugging
+      console.log('[Repositories Page] Loaded repositories:', data.repositories.map(r => ({
+        id: r.id,
+        dbId: r.dbId,
+        name: r.name,
+      })))
+
       setRepositories(data.repositories)
     } catch (err) {
       console.error('Error fetching repositories:', err)
@@ -324,12 +332,18 @@ export default function RepositoriesPage() {
                       </div>
 
                       <div className="flex items-center gap-2 pt-2">
-                        <Link
-                          href={`/repositories/${repo.id}/config`}
-                          className="ml-auto px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-                        >
-                          {repo.hasConfig ? '编辑配置' : '配置翻译'}
-                        </Link>
+                        {repo.dbId ? (
+                          <Link
+                            href={`/repositories/${repo.dbId}/config`}
+                            className="ml-auto px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+                          >
+                            {repo.hasConfig ? '编辑配置' : '配置翻译'}
+                          </Link>
+                        ) : (
+                          <span className="ml-auto text-sm text-muted-foreground">
+                            同步中...
+                          </span>
+                        )}
                       </div>
                     </div>
                   ))}

@@ -48,6 +48,11 @@ export class TranslationQueue {
     return this.queue.add(handler)
   }
 
+  // 添加任务到队列（支持选项）
+  add(handler: () => Promise<void>, options?: { taskId?: string }): Promise<void> {
+    return this.queue.add(handler, options)
+  }
+
   // 获取队列状态
   getStatus() {
     return {
@@ -72,3 +77,7 @@ export class TranslationQueue {
     this.queue.clear()
   }
 }
+
+// Export singleton instance
+export const translationQueue = TranslationQueue.getInstance()
+
