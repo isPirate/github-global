@@ -86,6 +86,29 @@ export default function TasksPage() {
     checkAuthAndFetch()
   }, [page, filter])
 
+  // Auto-refresh when there are processing tasks
+  useEffect(() => {
+    const hasProcessingTasks = tasks.some(task => task.status === 'processing')
+
+    if (!hasProcessingTasks) {
+      return // No processing tasks, no need to poll
+    }
+
+    console.log('[AutoRefresh] Starting auto-poll for processing tasks...')
+
+    // Poll every 5 seconds
+    const interval = setInterval(() => {
+      console.log('[AutoRefresh] Fetching tasks...')
+      fetchTasks()
+    }, 5000)
+
+    // Cleanup on unmount or when tasks change
+    return () => {
+      console.log('[AutoRefresh] Stopping auto-poll')
+      clearInterval(interval)
+    }
+  }, [tasks, page, filter])
+
   const checkAuthAndFetch = async () => {
     try {
       const response = await fetch('/api/auth/me')
@@ -454,6 +477,17 @@ export default function TasksPage() {
           </div>
         )}
       </div>
+
+      {/* Auto-refresh indicator */}
+      {tasks.some(task => task.status === 'processing') && (
+        <div className="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-pulse z-40">
+          <span className="animate-spin text-lg">🔄</span>
+          <div className="flex flex-col">
+            <span className="font-medium text-sm">翻译任务进行中</span>
+            <span className="text-xs text-blue-100">状态自动更新中...</span>
+          </div>
+        </div>
+      )}
 
       {/* Task Detail Modal */}
       {selectedTask && (

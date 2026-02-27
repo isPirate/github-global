@@ -5,6 +5,7 @@ import { translationQueue } from '@/lib/translation/queue'
 import { OpenRouterEngine } from '@/lib/translation/openrouter'
 import { createAppAuth } from '@octokit/auth-app'
 import { Octokit } from 'octokit'
+import { createHash } from 'crypto'
 
 // POST /api/repositories/[id]/translate - Manually trigger translation
 export async function POST(
@@ -170,7 +171,9 @@ export async function processTranslationTask(taskId: string, repository: any) {
       ref: 'heads/main',
     })
 
-    const treeSha = refData.object.sha
+    // Get current commit SHA for branch creation
+    const currentSha = refData.object.sha
+    const treeSha = currentSha
     const { data: treeData } = await octokit.rest.git.getTree({
       owner: fullRepository.fullName.split('/')[0],
       repo: fullRepository.fullName.split('/')[1],
@@ -233,6 +236,33 @@ export async function processTranslationTask(taskId: string, repository: any) {
     let failedFiles = 0
     let totalTokens = 0
 
+    // Generate unique branch name based on timestamp
+    const timestamp = Math.floor(Date.now() / 1000)
+    const branchName = `i18n/update-${timestamp}`
+    console.log(`[Translate] Using branch: ${branchName}`)
+
+    // Create unified branch for all languages
+    try {
+      await octokit.rest.git.createRef({
+        owner: fullRepository.fullName.split('/')[0],
+        repo: fullRepository.fullName.split('/')[1],
+        ref: `refs/heads/${branchName}`,
+        sha: currentSha,
+      })
+      console.log(`[Translate] Created branch: ${branchName}`)
+    } catch (error) {
+      console.error('[Translate] Failed to create branch:', error)
+      throw new Error('Failed to create translation branch')
+    }
+
+    // Collect files to commit by language
+    const filesToCommit = new Map<string, Array<{
+      path: string
+      content: string
+      fileRecordId: string
+      tokensUsed: number
+    }>>()
+
     // Process each file for each target language
     for (const file of filesToTranslate) {
       for (const lang of targetLanguages) {
@@ -263,11 +293,12 @@ export async function processTranslationTask(taskId: string, repository: any) {
           if ('content' in fileData && fileData.content) {
             const content = Buffer.from(fileData.content, 'base64').toString('utf-8')
 
-            // Update source content hash
+            // Update source content hash using SHA256
+            const contentHash = createHash('sha256').update(content).digest('hex')
             await prisma.translationFile.update({
               where: { id: fileRecord.id },
               data: {
-                sourceContentHash: Buffer.from(content).toString('base64'),
+                sourceContentHash: contentHash,
               },
             })
 
@@ -279,91 +310,29 @@ export async function processTranslationTask(taskId: string, repository: any) {
 
             totalTokens += result.usage.totalTokens
 
-            // Create branch for this language
-            const branchName = fullRepository.config.targetBranchTemplate.replace(
-              '{lang}',
-              lang
-            )
+            // Collect file for batch commit (instead of immediate commit)
+            const translatedFilePath = `i18n/${lang}/${file.path}`
+            const translatedContentHash = createHash('sha256').update(result.text).digest('hex')
 
-            try {
-              // Check if branch exists
-              await octokit.rest.git.getRef({
-                owner: fullRepository.fullName.split('/')[0],
-                repo: fullRepository.fullName.split('/')[1],
-                ref: `heads/${branchName}`,
-              })
-            } catch {
-              // Branch doesn't exist, create it
-              await octokit.rest.git.createRef({
-                owner: fullRepository.fullName.split('/')[0],
-                repo: fullRepository.fullName.split('/')[1],
-                ref: `refs/heads/${branchName}`,
-                sha: refData.object.sha,
-              })
+            if (!filesToCommit.has(lang)) {
+              filesToCommit.set(lang, [])
             }
 
-            // Create or update file in the language branch
-            const translatedFilePath = file.path.replace(
-              /\/[^/]+\.md$/,
-              `/${lang}/${file.path.split('/').pop()}`
-            )
+            filesToCommit.get(lang)!.push({
+              path: translatedFilePath,
+              content: result.text,
+              fileRecordId: fileRecord.id,
+              tokensUsed: result.usage.totalTokens,
+            })
 
-            try {
-              // Check if file already exists in the target branch
-              let fileParams: any = {
-                owner: fullRepository.fullName.split('/')[0],
-                repo: fullRepository.fullName.split('/')[1],
-                path: translatedFilePath,
-                message: fullRepository.config.commitMessageTemplate.replace('{lang}', lang),
-                content: Buffer.from(result.text).toString('base64'),
-                branch: branchName,
-              }
-
-              // Try to get the current file to check if it exists
-              try {
-                const { data: existingFile } = await octokit.rest.repos.getContent({
-                  owner: fullRepository.fullName.split('/')[0],
-                  repo: fullRepository.fullName.split('/')[1],
-                  path: translatedFilePath,
-                  ref: `heads/${branchName}`,
-                })
-
-                // File exists, include sha for update
-                if ('sha' in existingFile) {
-                  fileParams.sha = existingFile.sha
-                }
-              } catch {
-                // File doesn't exist, don't include sha (create new file)
-                console.log(`[Translate] Creating new file: ${translatedFilePath}`)
-              }
-
-              await octokit.rest.repos.createOrUpdateFileContents(fileParams)
-
-              // Update file record as completed
-              await prisma.translationFile.update({
-                where: { id: fileRecord.id },
-                data: {
-                  status: 'completed',
-                  translatedContentHash: Buffer.from(result.text).toString('base64'),
-                  tokensUsed: result.usage.totalTokens,
-                  completedAt: new Date(),
-                },
-              })
-
-              processedFiles++
-            } catch (error) {
-              console.error(`Error creating file ${translatedFilePath}:`, error)
-              failedFiles++
-
-              await prisma.translationFile.update({
-                where: { id: fileRecord.id },
-                data: {
-                  status: 'failed',
-                  errorMessage: String(error),
-                  completedAt: new Date(),
-                },
-              })
-            }
+            // Update file record with translated content hash (status will be updated later)
+            await prisma.translationFile.update({
+              where: { id: fileRecord.id },
+              data: {
+                translatedContentHash: translatedContentHash,
+                tokensUsed: result.usage.totalTokens,
+              },
+            })
           }
         } catch (error) {
           console.error(`Error processing file ${file.path} for language ${lang}:`, error)
@@ -386,133 +355,177 @@ export async function processTranslationTask(taskId: string, repository: any) {
       }
     }
 
-    // Create Pull Requests for each target language
-    const pullRequests: { lang: string; prNumber: number; prUrl: string }[] = []
+    // Commit files by language using Git Tree API
+    console.log(`[Translate] Starting to commit files for ${filesToCommit.size} languages...`)
 
-    for (const lang of targetLanguages) {
+    let latestCommitSha = currentSha
+
+    for (const [lang, files] of filesToCommit.entries()) {
       try {
-        const branchName = fullRepository.config.targetBranchTemplate.replace('{lang}', lang)
+        console.log(`[Translate] Processing ${lang}: ${files.length} files`)
 
-        // Check if PR already exists for this branch
-        const { data: existingPrs } = await octokit.rest.pulls.list({
+        // Create blobs for all files
+        const treeItems = await Promise.all(files.map(async (file) => {
+          const { data: blob } = await octokit.rest.git.createBlob({
+            owner: fullRepository.fullName.split('/')[0],
+            repo: fullRepository.fullName.split('/')[1],
+            content: Buffer.from(file.content).toString('base64'),
+            encoding: 'base64',
+          })
+
+          return {
+            path: file.path,
+            mode: '100644' as const,
+            type: 'blob' as const,
+            sha: blob.sha,
+          }
+        }))
+
+        // Create tree with all files for this language
+        const { data: tree } = await octokit.rest.git.createTree({
           owner: fullRepository.fullName.split('/')[0],
           repo: fullRepository.fullName.split('/')[1],
-          head: `${fullRepository.fullName.split('/')[0]}:${branchName}`,
-          base: 'main',
-          state: 'open',
+          base_tree: latestCommitSha,
+          tree: treeItems,
         })
 
-        if (existingPrs.length > 0) {
-          // PR already exists, update the translation files with PR number
-          console.log(`[Translate] PR already exists for ${lang}: #${existingPrs[0].number}`)
-          pullRequests.push({
-            lang,
-            prNumber: existingPrs[0].number,
-            prUrl: existingPrs[0].html_url,
-          })
+        // Create commit for this language
+        const { data: commit } = await octokit.rest.git.createCommit({
+          owner: fullRepository.fullName.split('/')[0],
+          repo: fullRepository.fullName.split('/')[1],
+          message: `docs: translate to ${lang.toUpperCase()} (${files.length} files)`,
+          tree: tree.sha,
+          parents: [latestCommitSha],
+        })
 
-          // Update translation files with PR number
-          await prisma.translationFile.updateMany({
-            where: {
-              taskId,
-              targetLanguage: lang,
-            },
+        console.log(`[Translate] Created commit for ${lang}: ${commit.sha}`)
+
+        // Update branch reference to point to the new commit
+        await octokit.rest.git.updateRef({
+          owner: fullRepository.fullName.split('/')[0],
+          repo: fullRepository.fullName.split('/')[1],
+          ref: `heads/${branchName}`,
+          sha: commit.sha,
+        })
+
+        // Update latest commit SHA for next language
+        latestCommitSha = commit.sha
+
+        // Update file records status
+        await Promise.all(files.map(file =>
+          prisma.translationFile.update({
+            where: { id: file.fileRecordId },
             data: {
-              prNumber: existingPrs[0].number,
+              status: 'completed',
+              completedAt: new Date(),
             },
           })
+        ))
 
-          continue
-        }
+        processedFiles += files.length
+      } catch (error) {
+        console.error(`[Translate] Error committing files for ${lang}:`, error)
+        failedFiles += files.length
 
-        // Create new PR
-        const prTitle = `docs: Translate to ${lang.toUpperCase()}`
-        const prBody = `## Translation Summary
+        // Update file records as failed
+        await Promise.all(files.map(file =>
+          prisma.translationFile.update({
+            where: { id: file.fileRecordId },
+            data: {
+              status: 'failed',
+              errorMessage: `Commit failed: ${error instanceof Error ? error.message : String(error)}`,
+              completedAt: new Date(),
+            },
+          })
+        ))
+      }
+    }
 
-This pull request contains automated translations to **${lang.toUpperCase()}**.
+    // Create unified PR for all languages
+    let prNumber: number | null = null
+    let prUrl: string | null = null
+
+    try {
+      const prTitle = `docs: I18n Translation Update (${new Date().toLocaleDateString('zh-CN')})`
+
+      // Build language breakdown for PR description
+      const languageList = Array.from(filesToCommit.entries()).map(([lang, files]) => {
+        return `- **${lang.toUpperCase()}**: ${files.length} files`
+      }).join('\n')
+
+      // Build file list example (first 10 files)
+      const sampleFiles = Array.from(filesToCommit.entries())
+        .flatMap(([lang, files]) =>
+          files.slice(0, 3).map(f => `i18n/${lang}/${f.filePath}`)
+        )
+        .slice(0, 10)
+        .map(f => `- ${f}`)
+        .join('\n')
+
+      const prBody = `## 🌐 Internationalization Translation
+
+This pull request contains automated translations for multiple languages.
 
 ### 📊 Statistics
-- **Target Language**: ${lang}
-- **Files Translated**: ${processedFiles}
+- **Languages**: ${filesToCommit.size}
+- **Total Files**: ${processedFiles}
+- **Failed Files**: ${failedFiles}
 - **Tokens Used**: ${totalTokens.toLocaleString()}
-- **Status**: ${failedFiles > 0 ? `⚠️ ${failedFiles} file(s) failed` : '✅ All files successful'}
 
-### 📝 Translated Files
-${await prisma.translationFile.findMany({
-          where: {
-            taskId,
-            targetLanguage: lang,
-            status: 'completed',
-          },
-          select: {
-            filePath: true,
-          },
-        }).then(files => files.map(f => `- \`${f.filePath}\``).join('\n'))}
+### 📝 Language Breakdown
+${languageList}
+
+### 📁 File Structure
+Translations are organized under \`i18n/{lang}/\` directory:
+
+\`\`\`
+i18n/
+${Array.from(filesToCommit.keys()).map(lang => `├── ${lang}/`).join('')}
+│   └── ...
+\`\`\`
+
+### 📝 Sample Files
+${sampleFiles}
+${filesToCommit.size > 0 && Array.from(filesToCommit.values()).flat().length > 10 ? '...\n*(Showing first 10 files)*' : ''}
 
 ---
 
 🤖 Generated by [GitHub Global](https://github.com/apps/i18n-github-global) - Automated Translation Tool
 
-**Note**: Please review the translations before merging. You can make additional edits if needed.`
+**Note**: Please review the translations before merging.`
 
-        const { data: pr } = await octokit.rest.pulls.create({
-          owner: fullRepository.fullName.split('/')[0],
-          repo: fullRepository.fullName.split('/')[1],
-          title: prTitle,
-          body: prBody,
-          head: branchName,
-          base: 'main',
-          maintainer_can_modify: true, // Allow maintainers to push changes
-        })
+      const { data: pr } = await octokit.rest.pulls.create({
+        owner: fullRepository.fullName.split('/')[0],
+        repo: fullRepository.fullName.split('/')[1],
+        title: prTitle,
+        body: prBody,
+        head: branchName,
+        base: 'main',
+        maintainer_can_modify: true,
+      })
 
-        console.log(`[Translate] Created PR #${pr.number} for ${lang}`)
-        pullRequests.push({
-          lang,
-          prNumber: pr.number,
-          prUrl: pr.html_url,
-        })
+      prNumber = pr.number
+      prUrl = pr.html_url
+      console.log(`[Translate] Created unified PR #${pr.number}`)
 
-        // Update translation files with PR number
-        await prisma.translationFile.updateMany({
-          where: {
-            taskId,
-            targetLanguage: lang,
+      // Update all file records with PR number
+      await prisma.translationFile.updateMany({
+        where: { taskId },
+        data: { prNumber: pr.number },
+      })
+    } catch (error) {
+      console.error('[Translate] Failed to create PR:', error)
+
+      await prisma.translationHistory.create({
+        data: {
+          taskId,
+          repositoryId: fullRepository.id,
+          eventType: 'pr_failed',
+          eventData: {
+            error: error instanceof Error ? error.message : String(error),
           },
-          data: {
-            prNumber: pr.number,
-          },
-        })
-
-        // Create PR history entry
-        await prisma.translationHistory.create({
-          data: {
-            taskId,
-            repositoryId: fullRepository.id,
-            eventType: 'pr_created',
-            eventData: {
-              language: lang,
-              prNumber: pr.number,
-              prUrl: pr.html_url,
-              branch: branchName,
-            },
-          },
-        })
-      } catch (error) {
-        console.error(`Error creating PR for ${lang}:`, error)
-
-        // Create PR failure history entry
-        await prisma.translationHistory.create({
-          data: {
-            taskId,
-            repositoryId: fullRepository.id,
-            eventType: 'pr_failed',
-            eventData: {
-              language: lang,
-              error: error instanceof Error ? error.message : String(error),
-            },
-          },
-        })
-      }
+        },
+      })
     }
 
     // Update task as completed
@@ -540,7 +553,10 @@ ${await prisma.translationFile.findMany({
           processedFiles,
           failedFiles,
           totalTokens,
-          pullRequests,
+          prNumber,
+          prUrl,
+          branch: branchName,
+          languages: Array.from(filesToCommit.keys()),
           timestamp: new Date().toISOString(),
         },
       },
