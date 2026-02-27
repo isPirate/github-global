@@ -471,7 +471,10 @@ export async function processTranslationTask(taskId: string, repository: any) {
     let prUrl: string | null = null
 
     try {
-      const prTitle = `docs: I18n Translation Update (${new Date().toLocaleDateString('zh-CN')})`
+      // Build PR title with source and target languages
+      const sourceLang = fullRepository.config.baseLanguage
+      const targetLangs = Array.from(filesToCommit.keys()).map(lang => lang.toUpperCase()).join(', ')
+      const prTitle = `docs: I18n Translation ${sourceLang.toUpperCase()} → ${targetLangs} (${new Date().toLocaleDateString('zh-CN')})`
 
       // Build language breakdown for PR description
       const languageList = Array.from(filesToCommit.entries()).map(([lang, files]) => {
