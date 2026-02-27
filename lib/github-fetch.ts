@@ -1,7 +1,20 @@
 /**
- * GitHub API fetch wrapper with proper Next.js server configuration
- * This handles the undici fetch issues in Node.js server environment
+ * GitHub API fetch wrapper using Node.js https module
+ * Supports proxy via HTTP_PROXY or HTTPS_PROXY environment variables
  */
+
+import { HttpsProxyAgent } from 'https-proxy-agent'
+import { request as httpRequest } from 'https'
+
+// Get proxy URL from environment
+const PROXY_URL = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || ''
+
+// Proxy agent for all requests
+const proxyAgent = PROXY_URL ? new HttpsProxyAgent(PROXY_URL) : undefined
+
+if (PROXY_URL) {
+  console.log('[GitHubFetch] Using proxy:', PROXY_URL.replace(/\/\/[^@]+@/, '//***@'))
+}
 
 export interface GitHubTokenResponse {
   access_token: string
@@ -24,24 +37,51 @@ export interface GitHubEmail {
 }
 
 /**
- * Fetch with Next.js specific configuration to avoid undici timeout issues
+ * Make an HTTPS request with optional proxy support
  */
-export async function githubFetch(url: string, options: RequestInit = {}): Promise<Response> {
-  // Remove signal from options to avoid abort issues
-  const { signal, ...restOptions } = options
+function makeRequest(
+  url: string,
+  options: {
+    method?: string
+    headers?: Record<string, string>
+    body?: string
+  } = {}
+): Promise<{ data: any; statusCode: number }> {
+  return new Promise((resolve, reject) => {
+    const urlObj = new URL(url)
+    const isHttps = urlObj.protocol === 'https:'
 
-  const response = await fetch(url, {
-    ...restOptions,
-    // Next.js specific options for server-side fetch
-    // @ts-ignore - Next.js extends fetch options
-    cache: 'no-store',
-    // @ts-ignore
-    next: {
-      revalidate: 0,
-    },
+    const reqOpts: any = {
+      method: options.method || 'GET',
+      hostname: urlObj.hostname,
+      port: urlObj.port || (isHttps ? 443 : 80),
+      path: urlObj.pathname + urlObj.search,
+      headers: options.headers || {},
+      agent: proxyAgent,
+    }
+
+    const req = httpRequest(reqOpts, (res: any) => {
+      let data = ''
+
+      res.on('data', (chunk: any) => {
+        data += chunk
+      })
+
+      res.on('end', () => {
+        resolve({ data, statusCode: res.statusCode })
+      })
+    })
+
+    req.on('error', (error: Error) => {
+      reject(error)
+    })
+
+    if (options.body) {
+      req.write(options.body)
+    }
+
+    req.end()
   })
-
-  return response
 }
 
 /**
@@ -59,9 +99,8 @@ export async function exchangeCodeForToken(
     code,
   }).toString()
 
-  // Try fetch first
   try {
-    const response = await fetch(url, {
+    const { data, statusCode } = await makeRequest(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -71,118 +110,55 @@ export async function exchangeCodeForToken(
       body,
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      throw new Error(`Token exchange failed: ${response.status} ${errorText}`)
+    if (statusCode !== 200) {
+      throw new Error(`Token exchange failed: ${statusCode} ${data}`)
     }
 
-    const data = await response.json()
+    const result = JSON.parse(data)
 
-    if (data.error) {
-      throw new Error(data.error_description || data.error)
+    if (result.error) {
+      throw new Error(result.error_description || result.error)
     }
 
-    return data
+    return result
   } catch (error) {
-    console.error('[GitHubFetch] Fetch failed, trying alternative method:', error)
-    // If fetch fails, try with node's https module
-    return exchangeCodeForTokenFallback(code, clientId, clientSecret)
+    console.error('[GitHubFetch] Token exchange failed:', error)
+    throw error
   }
-}
-
-/**
- * Fallback method using https module
- */
-async function exchangeCodeForTokenFallback(
-  code: string,
-  clientId: string,
-  clientSecret: string
-): Promise<GitHubTokenResponse> {
-  return new Promise((resolve, reject) => {
-    const https = require('https')
-    const url = 'https://github.com/login/oauth/access_token'
-
-    const postData = new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      code,
-    }).toString()
-
-    const options = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json',
-        'User-Agent': 'GitHub-Global-App',
-        'Content-Length': Buffer.byteLength(postData),
-      },
-    }
-
-    const req = https.request(url, options, (res: any) => {
-      let data = ''
-
-      res.on('data', (chunk: any) => {
-        data += chunk
-      })
-
-      res.on('end', () => {
-        try {
-          const result = JSON.parse(data)
-
-          if (result.error) {
-            reject(new Error(result.error_description || result.error))
-          } else {
-            resolve(result)
-          }
-        } catch (error) {
-          reject(new Error(`Failed to parse response: ${data}`))
-        }
-      })
-    })
-
-    req.on('error', (error: Error) => {
-      reject(error)
-    })
-
-    req.write(postData)
-    req.end()
-  })
 }
 
 /**
  * Fetch GitHub user profile
  */
 export async function fetchGitHubUser(accessToken: string): Promise<GitHubUser> {
-  const response = await githubFetch('https://api.github.com/user', {
+  const { data, statusCode } = await makeRequest('https://api.github.com/user', {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'User-Agent': 'GitHub-Global-App',
     },
   })
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`Failed to fetch user: ${response.status} ${errorText}`)
+  if (statusCode !== 200) {
+    throw new Error(`Failed to fetch user: ${statusCode} ${data}`)
   }
 
-  return response.json()
+  return JSON.parse(data)
 }
 
 /**
  * Fetch GitHub user emails
  */
 export async function fetchGitHubEmails(accessToken: string): Promise<GitHubEmail[]> {
-  const response = await githubFetch('https://api.github.com/user/emails', {
+  const { data, statusCode } = await makeRequest('https://api.github.com/user/emails', {
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'User-Agent': 'GitHub-Global-App',
     },
   })
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`Failed to fetch emails: ${response.status} ${errorText}`)
+  if (statusCode !== 200) {
+    throw new Error(`Failed to fetch emails: ${statusCode} ${data}`)
   }
 
-  return response.json()
+  return JSON.parse(data)
 }
