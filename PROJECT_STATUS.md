@@ -2,7 +2,7 @@
 
 ## ✅ 项目状态
 
-**当前版本：v1.2** - 仓库管理功能已完成
+**当前版本：v2.0** - 翻译核心功能已完成
 
 ### 已完成的功能
 
@@ -11,50 +11,101 @@
 - 用户会话管理
 - 安全的 session 存储
 - 自动登录状态检查
+- 获取当前用户信息 API
 
 #### 2. 数据库 ✅
 - MySQL 数据库配置
 - Prisma ORM 集成
-- 完整的数据模型（用户、安装、仓库、配置）
+- 完整的数据模型（9个核心表）
 - 数据库迁移支持
+
+**数据模型列表：**
+- `User` - 用户信息
+- `GitHubAppInstallation` - GitHub App 安装记录
+- `Repository` - 仓库信息
+- `TranslationConfig` - 翻译配置
+- `TranslationEngine` - 翻译引擎配置
+- `TranslationTask` - 翻译任务
+- `TranslationFile` - 文件翻译记录
+- `TranslationHistory` - 翻译历史
+- `WebhookEvent` - Webhook 事件日志
 
 #### 3. GitHub App 集成 ✅
 - GitHub App 安装检测（实时）
 - 自动同步安装和仓库
 - 仓库权限管理（通过GitHub页面）
+- Webhook 事件处理
 
 #### 4. 仓库管理 ✅
 - 仓库列表展示
 - 自动同步已授权仓库
-- 仓库配置入口
+- 仓库配置页面
+- 仓库启用/禁用
+- 手动触发翻译
+- 翻译历史查询
 - 实时检测安装状态变化
 
-#### 5. 核心页面 ✅
+#### 5. 翻译功能 ✅
+- **多引擎支持**：OpenRouter 翻译引擎
+- **文件发现**：自动化文件发现和 glob 模式匹配
+- **多语言翻译**：支持多目标语言翻译
+- **分支管理**：自动创建独立语言分支
+- **PR 自动创建**：自动创建 Pull Request
+- **任务队列**：使用 p-queue 管理并发翻译任务
+- **进度跟踪**：完整的翻译进度跟踪
+- **错误处理**：自动降级和错误处理
+- **Markdown 支持**：专门优化的 Markdown 文件翻译
+- **内容哈希**：文件内容哈希检查避免重复翻译
+- **加密存储**：API 密钥加密存储
+- **Webhook 触发**：GitHub webhook 自动触发翻译
+
+#### 6. 核心页面 ✅
 - 首页 (`/`)
 - 登录页 (`/login`)
 - Dashboard (`/dashboard`)
 - 仓库管理页 (`/repositories`)
+- 仓库配置页 (`/repositories/[id]/config`)
 - 任务页 (`/tasks`)
 - 设置页 (`/settings`)
 
-#### 6. API 端点 ✅
-- `/api/auth/signin` - GitHub OAuth 登录
-- `/api/auth/callback` - OAuth 回调处理
-- `/api/auth/signout` - 退出登录
-- `/api/repositories` - 获取仓库列表（实时同步）
-- `/api/github-app/install-link` - 获取安装链接
-- `/api/github-app/auto-sync` - 手动同步安装
-- `/api/webhooks/github` - GitHub Webhook 处理
+#### 7. API 端点 ✅
 
-### 待开发的功能
+**认证相关：**
+- `POST /api/auth/signin` - GitHub OAuth 登录
+- `GET /api/auth/callback` - OAuth 回调处理
+- `POST /api/auth/signout` - 退出登录
+- `GET /api/auth/me` - 获取当前用户信息
 
-- [ ] 翻译配置界面（目标语言、文件过滤规则）
-- [ ] 翻译任务创建和管理
-- [ ] AI 翻译处理逻辑
-- [ ] 翻译进度追踪
-- [ ] Pull Request 自动创建
-- [ ] 翻译结果预览
-- [ ] 翻译历史记录
+**GitHub App 相关：**
+- `GET /api/github-app/install-link` - 获取安装链接
+- `GET /api/github-app/installation-url` - 获取安装 URL
+- `GET /api/github-app/installations` - 获取安装列表
+- `POST /api/github-app/auto-sync` - 自动同步安装
+- `GET /api/github-app/sync` - 手动同步
+
+**仓库管理：**
+- `GET /api/repositories` - 获取所有仓库（自动同步）
+- `POST /api/repositories/add` - 添加仓库
+- `GET /api/debug/repositories` - 调试仓库信息
+- `POST /api/repositories/[id]/config` - 更新仓库配置
+- `POST /api/repositories/[id]/enable` - 启用仓库
+- `POST /api/repositories/[id]/disable` - 禁用仓库
+- `POST /api/repositories/[id]/translate` - 手动触发翻译
+- `GET /api/repositories/[id]/translations` - 获取翻译历史
+
+**翻译任务：**
+- `GET /api/tasks` - 获取所有任务
+- `GET /api/tasks/[id]` - 获取特定任务详情
+
+**Webhook：**
+- `POST /api/webhooks/github` - GitHub Webhook 处理
+
+### 待优化的功能
+
+- [ ] 设置页面的完整实现
+- [ ] 任务状态的实时更新界面
+- [ ] 翻译结果预览功能
+- [ ] 更丰富的 UI 组件库
 
 ## 🚀 快速开始
 
@@ -159,34 +210,66 @@ github-global/
 │   │   ├── auth/               # 认证 API
 │   │   │   ├── callback/       # OAuth 回调
 │   │   │   ├── signin/         # 登录请求
-│   │   │   └── signout/        # 退出登录
+│   │   │   ├── signout/        # 退出登录
+│   │   │   └── me/             # 获取用户信息
 │   │   ├── github-app/         # GitHub App API
 │   │   │   ├── install-link/   # 安装链接
-│   │   │   └── auto-sync/      # 自动同步
+│   │   │   ├── installation-url/ # 安装 URL
+│   │   │   ├── installations/  # 安装列表
+│   │   │   ├── auto-sync/      # 自动同步
+│   │   │   └── sync/           # 手动同步
 │   │   ├── repositories/       # 仓库管理 API
 │   │   │   ├── route.ts        # 获取仓库列表
-│   │   │   └── [id]/route.ts   # 删除仓库
+│   │   │   ├── add/            # 添加仓库
+│   │   │   ├── [id]/           # 仓库详情操作
+│   │   │   │   ├── config/     # 更新配置
+│   │   │   │   ├── enable/     # 启用仓库
+│   │   │   │   ├── disable/    # 禁用仓库
+│   │   │   │   ├── translate/  # 触发翻译
+│   │   │   │   └── translations/ # 翻译历史
+│   │   │   └── debug/          # 调试接口
+│   │   ├── tasks/              # 翻译任务 API
+│   │   │   ├── route.ts        # 获取任务列表
+│   │   │   └── [id]/           # 任务详情
 │   │   └── webhooks/           # Webhook 处理
 │   │       └── github/         # GitHub Webhooks
 │   ├── dashboard/              # Dashboard
 │   ├── repositories/           # 仓库管理页面
+│   │   └── [id]/
+│   │       └── config/         # 仓库配置页面
 │   ├── tasks/                  # 翻译任务页面
 │   ├── settings/               # 设置页面
 │   ├── layout.tsx              # 根布局
 │   └── page.tsx                # 首页
 ├── components/
 │   └── ui/                     # UI 组件
+│       ├── button.tsx
+│       ├── card.tsx
+│       ├── input.tsx
+│       ├── label.tsx
+│       └── alert.tsx
 ├── lib/
-│   ├── auth/                   # 认证逻辑
-│   ├── db/                     # 数据库
+│   ├── auth/
+│   │   └── session.ts          # 会话管理
+│   ├── crypto/
+│   │   └── encryption.ts       # 密钥加密
+│   ├── db/
 │   │   └── prisma.ts           # Prisma 客户端
+│   ├── github/
+│   │   ├── app.ts              # GitHub App 客户端
+│   │   ├── client.ts           # GitHub API 客户端
+│   │   ├── types.ts            # GitHub 类型定义
+│   │   └── fetch.ts            # GitHub 数据获取
+│   ├── translation/
+│   │   ├── openrouter.ts       # OpenRouter 翻译引擎
+│   │   ├── markdown.ts         # Markdown 处理
+│   │   └── queue.ts            # 翻译任务队列
 │   ├── fetch.ts                # Fetch 工具
-│   ├── github-fetch.ts         # GitHub API
-│   ├── github-app.ts           # GitHub App 工具
 │   └── utils.ts                # 工具函数
 ├── prisma/
 │   ├── schema.prisma           # 数据库模型
 │   └── migrations/             # 数据库迁移
+├── middleware.ts               # Next.js 中间件
 └── .env.local                  # 环境变量配置
 ```
 
@@ -218,6 +301,30 @@ npm run lint         # 代码检查
 3. **自动清理**：数据库中有但 GitHub 上没有的仓库，自动删除记录
 4. **权限管理**：仓库添加/删除权限通过 GitHub 页面管理
 
+### 翻译工作流程
+
+1. **配置翻译**：在仓库配置页面设置目标语言、文件模式等
+2. **触发翻译**：
+   - 手动触发：点击"立即翻译"按钮
+   - 自动触发：GitHub Webhook 监听 push 事件
+3. **任务队列**：翻译任务进入队列，使用 p-queue 管理并发
+4. **文件处理**：
+   - 发现匹配的文件（glob 模式）
+   - 检查内容哈希避免重复翻译
+   - 调用翻译引擎进行翻译
+5. **分支创建**：为目标语言创建独立分支
+6. **PR 创建**：自动创建 Pull Request 到目标仓库
+7. **进度跟踪**：实时更新翻译进度和状态
+
+### 翻译引擎设计
+
+支持 OpenRouter 多模型翻译：
+
+- **模型自动降级**：主模型失败时自动切换备用模型
+- **并发控制**：队列管理避免 API 速率限制
+- **Token 统计**：精确跟踪 Token 使用量
+- **Markdown 优化**：专门处理 Markdown 格式，保留代码块和链接
+
 ### GitHub App 与 OAuth 的区别
 
 - **GitHub OAuth**：用于用户登录认证
@@ -226,16 +333,21 @@ npm run lint         # 代码检查
   - 可以访问用户选择的仓库
   - 使用 JWT 认证
   - 支持实时权限管理
+  - 接收 Webhook 事件
 
 ### 数据库设计
 
-核心表结构：
+9 个核心表结构：
 
-- **users** - 用户信息
-- **gitHubAppInstallations** - GitHub App 安装记录
-- **repositories** - 仓库信息
-- **repositoryConfigs** - 仓库翻译配置
-- **translationTasks** - 翻译任务
+- **User** - 用户信息
+- **GitHubAppInstallation** - GitHub App 安装记录
+- **Repository** - 仓库信息
+- **TranslationConfig** - 翻译配置（目标语言、文件模式等）
+- **TranslationEngine** - 翻译引擎配置（API 密钥加密存储）
+- **TranslationTask** - 翻译任务（状态、进度、统计）
+- **TranslationFile** - 文件翻译记录（状态、哈希、Token）
+- **TranslationHistory** - 翻译历史事件
+- **WebhookEvent** - Webhook 事件日志
 
 ## 🐛 故障排除
 
@@ -329,20 +441,36 @@ taskkill /PID <PID> /F
 
 ## 🎯 下一步开发
 
-### 短期目标（当前）
+### 已完成 ✅
 1. ✅ 实现仓库列表页面
 2. ✅ 添加 GitHub App 集成
-3. 🚧 实现翻译配置界面
+3. ✅ 实现翻译配置界面
+4. ✅ 实现翻译任务创建和管理
+5. ✅ 集成 AI 翻译 API (OpenRouter)
+6. ✅ Webhook 处理 push 事件
+7. ✅ 自动创建 Pull Request
+8. ✅ 翻译进度追踪
+9. ✅ 翻译历史记录
+10. ✅ 多语言支持
 
-### 中期目标
-1. 实现翻译任务创建
-2. 集成 AI 翻译 API
-3. Webhook 处理 push 事件
+### 可优化功能 🔄
+1. 设置页面的完整实现
+2. 任务状态的实时更新界面（WebSocket/SSE）
+3. 翻译结果预览功能
+4. 翻译质量评估机制
+5. 更多文件格式支持（.mdx, .txt 等）
+6. 批量翻译操作
+7. 翻译记忆库（TM）集成
+8. 术语表管理
 
-### 长期目标
-1. 多语言支持
-2. 翻译质量评估
-3. 翻译历史记录
+### 未来功能 🚀
+1. 翻译版本对比
+2. 自动翻译规则建议
+3. 翻译成本估算
+4. 多翻译引擎支持（DeepL, Google 等）
+5. 翻译质量评分
+6. 协作翻译功能
+7. 翻译审核流程
 
 ## 📝 技术栈
 
@@ -364,6 +492,6 @@ taskkill /PID <PID> /F
 
 ---
 
-**最后更新**: 2026-02-25
-**版本**: 1.2.0
-**状态**: ✅ 仓库管理功能已完成
+**最后更新**: 2026-02-27
+**版本**: 2.0.0
+**状态**: ✅ 翻译核心功能已完成
