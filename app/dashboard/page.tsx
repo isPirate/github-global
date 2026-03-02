@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth/session'
-import SignOutButton from './sign-out-button'
+import AppLayout from '@/components/app-layout'
 
 export default async function DashboardPage() {
   const session = await getSession()
@@ -12,25 +12,13 @@ export default async function DashboardPage() {
   const { user } = session
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground mt-2">
-              欢迎回来, {user.username}!
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            {user.avatarUrl && (
-              <img
-                src={user.avatarUrl}
-                alt={user.username}
-                className="w-12 h-12 rounded-full"
-              />
-            )}
-            <SignOutButton />
-          </div>
+    <AppLayout user={{ username: user.username, avatarUrl: user.avatarUrl }}>
+      <div className="container mx-auto py-8 px-4">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground mt-2">
+            欢迎回来, {user.username}!
+          </p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -91,6 +79,6 @@ export default async function DashboardPage() {
           </div>
         </div>
       </div>
-    </div>
+    </AppLayout>
   )
 }

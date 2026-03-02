@@ -22,8 +22,26 @@ model User {
 
   installations     GitHubAppInstallation[]
   repositories      Repository[]
+  settings          UserSettings?
 
   @@map("users")
+}
+
+// 用户设置表
+model UserSettings {
+  id                     String   @id @default(uuid())
+  userId                 String   @unique @map("user_id")
+  defaultTargetLanguages Json     @default("[]") @map("default_target_languages")
+  autoCreatePr           Boolean  @default(true) @map("auto_create_pr")
+  saveTranslationHistory Boolean  @default(true) @map("save_translation_history")
+  emailNotifications     Boolean  @default(false) @map("email_notifications")
+  encryptedOpenRouterKey String?  @map("encrypted_openrouter_key") @db.Text
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
 }
 
 // GitHub App 安装记录表

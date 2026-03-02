@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import ClientAppLayout from '@/components/client-app-layout'
 
 interface TranslationFile {
   id: string
@@ -43,6 +43,11 @@ interface TasksResponse {
   offset: number
 }
 
+interface UserInfo {
+  username: string
+  avatarUrl?: string | null
+}
+
 const STATUS_LABELS = {
   pending: '等待中',
   processing: '进行中',
@@ -67,6 +72,7 @@ export default function TasksPage() {
   const [selectedTask, setSelectedTask] = useState<TranslationTask | null>(null)
   const [filter, setFilter] = useState<string>('all')
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set())
+  const [user, setUser] = useState<UserInfo | null>(null)
 
   const pageSize = 20
 
@@ -116,6 +122,12 @@ export default function TasksPage() {
         router.push('/login')
         return
       }
+
+      const authData = await response.json()
+      setUser({
+        username: authData.user.username,
+        avatarUrl: authData.user.avatarUrl,
+      })
 
       await fetchTasks()
     } catch (err) {
@@ -186,8 +198,8 @@ export default function TasksPage() {
 
   if (loading && page === 0) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto py-8">
+      <ClientAppLayout user={{ username: 'Loading...' }}>
+        <div className="container mx-auto py-8 px-4">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
@@ -195,22 +207,13 @@ export default function TasksPage() {
             </div>
           </div>
         </div>
-      </div>
+      </ClientAppLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-8 max-w-6xl">
-        <div className="mb-8">
-          <Link
-            href="/dashboard"
-            className="text-sm text-muted-foreground hover:text-primary"
-          >
-            ← 返回 Dashboard
-          </Link>
-        </div>
-
+    <ClientAppLayout user={user || { username: 'User' }}>
+      <div className="container mx-auto py-8 px-4 max-w-6xl">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold">翻译任务</h1>
@@ -629,6 +632,6 @@ export default function TasksPage() {
           </div>
         </div>
       )}
-    </div>
+    </ClientAppLayout>
   )
 }

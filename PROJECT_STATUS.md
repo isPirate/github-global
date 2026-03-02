@@ -2,7 +2,7 @@
 
 ## ✅ 项目状态
 
-**当前版本：v2.0** - 翻译核心功能已完成
+**当前版本：v2.1** - 设置页面和统一导航栏已完成
 
 ### 已完成的功能
 
@@ -16,11 +16,12 @@
 #### 2. 数据库 ✅
 - MySQL 数据库配置
 - Prisma ORM 集成
-- 完整的数据模型（9个核心表）
+- 完整的数据模型（10个核心表）
 - 数据库迁移支持
 
 **数据模型列表：**
 - `User` - 用户信息
+- `UserSettings` - 用户偏好设置（新增）
 - `GitHubAppInstallation` - GitHub App 安装记录
 - `Repository` - 仓库信息
 - `TranslationConfig` - 翻译配置
@@ -66,15 +67,34 @@
 - 仓库管理页 (`/repositories`)
 - 仓库配置页 (`/repositories/[id]/config`)
 - 任务页 (`/tasks`)
-- 设置页 (`/settings`)
+- 设置页 (`/settings`) - 完整实现
 
-#### 7. API 端点 ✅
+#### 7. 统一导航栏 ✅（新增）
+- Logo 和品牌标识
+- 导航链接（仓库、任务）
+- 用户头像下拉菜单
+  - Dashboard 快捷入口
+  - 设置页面入口
+  - 退出登录
+
+#### 8. 设置页面 ✅（新增）
+- **账户信息**：显示用户基本信息
+- **偏好设置**：默认目标语言、自动创建 PR、保存翻译历史、邮件通知
+- **API 密钥管理**：用户级 OpenRouter API Key 设置（加密存储）
+- **GitHub App 管理**：查看安装状态、快速跳转管理
+- **危险操作**：退出登录
+
+#### 9. API 端点 ✅
 
 **认证相关：**
 - `POST /api/auth/signin` - GitHub OAuth 登录
 - `GET /api/auth/callback` - OAuth 回调处理
 - `POST /api/auth/signout` - 退出登录
 - `GET /api/auth/me` - 获取当前用户信息
+
+**用户设置：**（新增）
+- `GET /api/user/settings` - 获取用户设置
+- `POST /api/user/settings` - 更新用户设置（包括 API Key）
 
 **GitHub App 相关：**
 - `GET /api/github-app/install-link` - 获取安装链接
@@ -102,8 +122,7 @@
 
 ### 待优化的功能
 
-- [ ] 设置页面的完整实现
-- [ ] 任务状态的实时更新界面
+- [ ] 任务状态的实时更新界面（WebSocket/SSE）
 - [ ] 翻译结果预览功能
 - [ ] 更丰富的 UI 组件库
 
@@ -192,12 +211,12 @@ npm run dev
 5. 仓库自动出现在列表中
 6. 点击"配置翻译"设置翻译规则
 
-#### 添加新仓库：
+#### 设置流程：
 
-1. 点击"管理仓库权限"按钮
-2. 在 GitHub 页面添加新的仓库权限
-3. 返回并点击"刷新"
-4. 新仓库自动同步到列表
+1. 点击右上角用户头像
+2. 选择"设置"
+3. 配置偏好设置和 API Key
+4. 管理 GitHub App 安装
 
 ## 📁 项目结构
 
@@ -212,6 +231,8 @@ github-global/
 │   │   │   ├── signin/         # 登录请求
 │   │   │   ├── signout/        # 退出登录
 │   │   │   └── me/             # 获取用户信息
+│   │   ├── user/               # 用户设置 API（新增）
+│   │   │   └── settings/       # 设置 CRUD
 │   │   ├── github-app/         # GitHub App API
 │   │   │   ├── install-link/   # 安装链接
 │   │   │   ├── installation-url/ # 安装 URL
@@ -238,16 +259,26 @@ github-global/
 │   │   └── [id]/
 │   │       └── config/         # 仓库配置页面
 │   ├── tasks/                  # 翻译任务页面
-│   ├── settings/               # 设置页面
+│   ├── settings/               # 设置页面（完整实现）
+│   │   └── _components/        # 设置页面组件（新增）
+│   │       ├── settings-form.tsx
+│   │       ├── account-section.tsx
+│   │       ├── preferences-section.tsx
+│   │       ├── api-key-section.tsx
+│   │       ├── github-app-section.tsx
+│   │       └── danger-zone-section.tsx
 │   ├── layout.tsx              # 根布局
 │   └── page.tsx                # 首页
 ├── components/
-│   └── ui/                     # UI 组件
-│       ├── button.tsx
-│       ├── card.tsx
-│       ├── input.tsx
-│       ├── label.tsx
-│       └── alert.tsx
+│   ├── ui/                     # UI 组件
+│   │   ├── button.tsx
+│   │   ├── card.tsx
+│   │   ├── input.tsx
+│   │   ├── label.tsx
+│   │   └── alert.tsx
+│   ├── app-layout.tsx          # 服务端布局组件（新增）
+│   ├── client-app-layout.tsx   # 客户端布局组件（新增）
+│   └── user-menu.tsx           # 用户头像下拉菜单（新增）
 ├── lib/
 │   ├── auth/
 │   │   └── session.ts          # 会话管理
@@ -292,6 +323,16 @@ npm run lint         # 代码检查
 
 ## 🎯 核心功能说明
 
+### 统一导航栏
+
+所有认证后的页面都使用统一的导航栏：
+- **Logo**：点击返回 Dashboard
+- **导航链接**：仓库、任务（移动端隐藏）
+- **用户头像**：点击弹出下拉菜单
+  - Dashboard
+  - 设置
+  - 退出登录
+
 ### 仓库自动同步机制
 
 系统实现了智能的仓库自动同步：
@@ -325,6 +366,14 @@ npm run lint         # 代码检查
 - **Token 统计**：精确跟踪 Token 使用量
 - **Markdown 优化**：专门处理 Markdown 格式，保留代码块和链接
 
+### 用户设置
+
+用户级配置优先于仓库级配置：
+
+- **API Key 回退逻辑**：仓库级 → 用户级 → 系统环境变量
+- **偏好设置**：作为新仓库的默认配置
+- **加密存储**：API 密钥使用 AES-256-GCM 加密
+
 ### GitHub App 与 OAuth 的区别
 
 - **GitHub OAuth**：用于用户登录认证
@@ -337,9 +386,10 @@ npm run lint         # 代码检查
 
 ### 数据库设计
 
-9 个核心表结构：
+10 个核心表结构：
 
 - **User** - 用户信息
+- **UserSettings** - 用户偏好设置（新增）
 - **GitHubAppInstallation** - GitHub App 安装记录
 - **Repository** - 仓库信息
 - **TranslationConfig** - 翻译配置（目标语言、文件模式等）
@@ -420,12 +470,20 @@ taskkill /PID <PID> /F
    - JWT 用于服务器端认证
    - 不暴露 Private Key
 
+5. **API 密钥加密**：
+   - 用户 API 密钥使用 AES-256-GCM 加密存储
+   - 仅在翻译时解密使用
+
 ## 📊 API 端点
 
 ### 认证相关
 - `GET /api/auth/signin` - 启动 OAuth 流程
 - `GET /api/auth/callback` - OAuth 回调
 - `POST /api/auth/signout` - 退出登录
+
+### 用户设置（新增）
+- `GET /api/user/settings` - 获取用户设置
+- `POST /api/user/settings` - 更新用户设置
 
 ### GitHub App 相关
 - `GET /api/github-app/install-link` - 获取 GitHub App 安装链接
@@ -452,16 +510,17 @@ taskkill /PID <PID> /F
 8. ✅ 翻译进度追踪
 9. ✅ 翻译历史记录
 10. ✅ 多语言支持
+11. ✅ 设置页面完整实现（新增）
+12. ✅ 统一导航栏和用户头像下拉菜单（新增）
 
 ### 可优化功能 🔄
-1. 设置页面的完整实现
-2. 任务状态的实时更新界面（WebSocket/SSE）
-3. 翻译结果预览功能
-4. 翻译质量评估机制
-5. 更多文件格式支持（.mdx, .txt 等）
-6. 批量翻译操作
-7. 翻译记忆库（TM）集成
-8. 术语表管理
+1. 任务状态的实时更新界面（WebSocket/SSE）
+2. 翻译结果预览功能
+3. 翻译质量评估机制
+4. 更多文件格式支持（.mdx, .txt 等）
+5. 批量翻译操作
+6. 翻译记忆库（TM）集成
+7. 术语表管理
 
 ### 未来功能 🚀
 1. 翻译版本对比
@@ -492,6 +551,6 @@ taskkill /PID <PID> /F
 
 ---
 
-**最后更新**: 2026-02-27
-**版本**: 2.0.0
-**状态**: ✅ 翻译核心功能已完成
+**最后更新**: 2026-03-02
+**版本**: 2.1.0
+**状态**: ✅ 设置页面和统一导航栏已完成

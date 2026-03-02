@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import ClientAppLayout from '@/components/client-app-layout'
 
 interface Repository {
   id: number
@@ -34,6 +35,11 @@ interface RepositoriesResponse {
   repositories: Repository[]
 }
 
+interface UserInfo {
+  username: string
+  avatarUrl?: string | null
+}
+
 export default function RepositoriesPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -42,6 +48,7 @@ export default function RepositoriesPage() {
   const [error, setError] = useState<string | null>(null)
   const [installationUrl, setInstallationUrl] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
+  const [user, setUser] = useState<UserInfo | null>(null)
 
   useEffect(() => {
     checkAuthAndFetch()
@@ -62,6 +69,11 @@ export default function RepositoriesPage() {
         router.push('/login?relogin=true')
         return
       }
+
+      setUser({
+        username: authData.user.username,
+        avatarUrl: authData.user.avatarUrl,
+      })
 
       // Get GitHub App installation URL
       try {
@@ -140,10 +152,10 @@ export default function RepositoriesPage() {
     }
   }
 
-  if (loading) {
+  if (loading || !user) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto py-8">
+      <ClientAppLayout user={{ username: 'Loading...' }}>
+        <div className="container mx-auto py-8 px-4">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
@@ -151,22 +163,13 @@ export default function RepositoriesPage() {
             </div>
           </div>
         </div>
-      </div>
+      </ClientAppLayout>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-8">
-        <div className="mb-8">
-          <Link
-            href="/dashboard"
-            className="text-sm text-muted-foreground hover:text-primary"
-          >
-            ← 返回 Dashboard
-          </Link>
-        </div>
-
+    <ClientAppLayout user={user}>
+      <div className="container mx-auto py-8 px-4">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold">我的仓库</h1>
@@ -386,6 +389,6 @@ export default function RepositoriesPage() {
           </>
         )}
       </div>
-    </div>
+    </ClientAppLayout>
   )
 }
