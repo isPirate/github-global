@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0')
     const status = searchParams.get('status')
     const repositoryId = searchParams.get('repositoryId')
+    const search = searchParams.get('search')
 
     // Build where clause
     const where: any = {
@@ -30,6 +31,32 @@ export async function GET(request: NextRequest) {
 
     if (repositoryId) {
       where.repositoryId = repositoryId
+    }
+
+    if (search) {
+      // When using OR, each condition must also include the user filter
+      where.OR = [
+        {
+          repository: {
+            name: {
+              contains: search,
+              mode: 'insensitive',
+            },
+            userId: session.user.id,
+          },
+        },
+        {
+          repository: {
+            fullName: {
+              contains: search,
+              mode: 'insensitive',
+            },
+            userId: session.user.id,
+          },
+        },
+      ]
+      // Remove the base repository filter since we're including it in OR conditions
+      delete where.repository
     }
 
     // Get tasks
