@@ -1,20 +1,21 @@
+import { CtaSection } from "@/components/marketing/cta-section"
+import { FeaturesSection } from "@/components/marketing/features-section"
+import { HeroSection } from "@/components/marketing/hero-section"
+import { HowItWorksSection } from "@/components/marketing/how-it-works-section"
+import { MarketingFooter } from "@/components/marketing/marketing-footer"
+import { MarketingHeader } from "@/components/marketing/marketing-header"
+
 export default function HomePage() {
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="max-w-md text-center">
-        <h1 className="text-4xl font-bold">GitHub Global</h1>
-        <p className="mt-4 text-lg text-muted-foreground">
-          自动化翻译您的 GitHub 仓库文档
-        </p>
-        <div className="mt-8">
-          <a
-            href="/login"
-            className="inline-block rounded-md bg-primary px-6 py-3 text-primary-foreground hover:bg-primary/90"
-          >
-            开始使用
-          </a>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background text-foreground">
+      <MarketingHeader />
+      <main>
+        <HeroSection />
+        <FeaturesSection />
+        <HowItWorksSection />
+        <CtaSection />
+      </main>
+      <MarketingFooter />
     </div>
-  );
+  )
 }
