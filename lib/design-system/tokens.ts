@@ -1,207 +1,137 @@
-/**
- * Design System Tokens
- *
- * This file contains all the design tokens used throughout the application.
- * These tokens are based on the GitHub green theme design system.
- */
-
-/**
- * Color Tokens (HSL values for Tailwind)
- */
-export const colors = {
-  brand: {
-    primary: 'hsl(138 76% 40%)',      // #2da44e
-    hover: 'hsl(138 76% 35%)',        // Deep green hover
-    light: 'hsl(138 76% 94%)',        // Light background
-  },
-  semantic: {
-    success: 'hsl(138 76% 40%)',      // Green - Completed
-    warning: 'hsl(38 92% 50%)',       // Orange - In Progress
-    error: 'hsl(0 84% 60%)',          // Red - Failed
-    info: 'hsl(199 89% 48%)',         // Blue - Info
-  },
-  neutral: {
-    text: {
-      primary: 'hsl(220 10% 10%)',
-      secondary: 'hsl(220 8% 45%)',
-      disabled: 'hsl(220 8% 70%)',
+export const designTokens = {
+  color: {
+    brand: {
+      primary: "hsl(146 62% 38%)",
+      primaryHover: "hsl(146 62% 33%)",
+      primarySoft: "hsl(147 51% 94%)",
+      ink: "hsl(221 39% 11%)",
+      glow: "hsl(153 58% 51%)",
     },
-    bg: {
-      primary: 'hsl(0 0% 100%)',
-      secondary: 'hsl(220 20% 97%)',
-      tertiary: 'hsl(220 20% 94%)',
+    neutral: {
+      0: "hsl(0 0% 100%)",
+      50: "hsl(210 20% 98%)",
+      100: "hsl(220 18% 96%)",
+      200: "hsl(220 16% 90%)",
+      300: "hsl(219 13% 82%)",
+      500: "hsl(220 9% 46%)",
+      700: "hsl(222 27% 18%)",
+      900: "hsl(223 39% 11%)",
     },
-    border: {
-      default: 'hsl(220 13% 91%)',
-      subtle: 'hsl(220 13% 95%)',
-      strong: 'hsl(220 13% 80%)',
+    status: {
+      success: {
+        solid: "hsl(145 63% 42%)",
+        soft: "hsl(147 52% 93%)",
+        text: "hsl(146 70% 22%)",
+      },
+      warning: {
+        solid: "hsl(38 92% 50%)",
+        soft: "hsl(48 100% 94%)",
+        text: "hsl(28 84% 24%)",
+      },
+      danger: {
+        solid: "hsl(0 78% 54%)",
+        soft: "hsl(0 100% 96%)",
+        text: "hsl(0 63% 32%)",
+      },
+      info: {
+        solid: "hsl(217 91% 60%)",
+        soft: "hsl(214 100% 96%)",
+        text: "hsl(221 60% 32%)",
+      },
+      muted: {
+        solid: "hsl(220 8% 46%)",
+        soft: "hsl(220 18% 95%)",
+        text: "hsl(222 19% 30%)",
+      },
+    },
+    gradient: {
+      heroStart: "hsl(147 51% 94%)",
+      heroEnd: "hsl(210 20% 98%)",
+      accentStart: "hsl(146 62% 38%)",
+      accentEnd: "hsl(217 91% 60%)",
     },
   },
-} as const
-
-/**
- * Spacing Tokens (in rem, based on 4px base unit)
- */
-export const spacing = {
-  xs: '0.25rem',    // 4px
-  sm: '0.5rem',     // 8px
-  md: '1rem',       // 16px
-  lg: '1.5rem',     // 24px
-  xl: '2rem',       // 32px
-  '2xl': '3rem',    // 48px
-  '3xl': '4rem',    // 64px
-} as const
-
-/**
- * Border Radius Tokens
- */
-export const radius = {
-  sm: '0.25rem',    // 4px - Small elements
-  md: '0.375rem',   // 6px - Default (GitHub style)
-  lg: '0.5rem',     // 8px - Cards
-  xl: '0.75rem',    // 12px - Large cards
-  full: '9999px',   // Pill shaped
-} as const
-
-/**
- * Shadow Tokens
- */
-export const shadow = {
-  sm: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-  md: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
-  lg: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-  xl: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
-  '2xl': '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
-} as const
-
-/**
- * Typography Tokens
- */
-export const typography = {
-  fontSize: {
-    xs: '0.75rem',     // 12px
-    sm: '0.875rem',    // 14px
-    base: '1rem',      // 16px
-    lg: '1.125rem',    // 18px
-    xl: '1.25rem',     // 20px
-    '2xl': '1.5rem',   // 24px
-    '3xl': '1.875rem', // 30px
-    '4xl': '2.25rem',  // 36px
+  radius: {
+    sm: "0.5rem",
+    md: "0.75rem",
+    lg: "1rem",
+    xl: "1.5rem",
+    pill: "9999px",
   },
-  fontWeight: {
-    normal: '400',
-    medium: '500',
-    semibold: '600',
-    bold: '700',
+  shadow: {
+    sm: "0 1px 2px rgb(15 23 42 / 0.05)",
+    md: "0 8px 24px rgb(15 23 42 / 0.08)",
+    lg: "0 18px 50px rgb(15 23 42 / 0.12)",
+    glow: "0 18px 50px rgb(22 163 74 / 0.15)",
   },
-  lineHeight: {
-    tight: '1.25',
-    normal: '1.5',
-    relaxed: '1.75',
+  spacing: {
+    section: "clamp(4rem, 8vw, 7rem)",
+    pageX: "clamp(1rem, 3vw, 2rem)",
+    pageY: "clamp(1.5rem, 3vw, 2.5rem)",
+  },
+  layout: {
+    pageMaxWidth: "80rem",
+    readingMaxWidth: "48rem",
+    sidebarWidth: "17rem",
+    sidebarCollapsedWidth: "4.75rem",
+    headerHeight: "4.25rem",
+  },
+  typography: {
+    hero: "clamp(2.75rem, 6vw, 4.75rem)",
+    pageTitle: "clamp(1.875rem, 3vw, 2.75rem)",
+    sectionTitle: "clamp(1.5rem, 2vw, 2rem)",
+    body: "1rem",
+    small: "0.875rem",
+  },
+  motion: {
+    fast: "150ms",
+    base: "220ms",
+    slow: "320ms",
   },
 } as const
 
-/**
- * Layout Tokens
- */
-export const layout = {
-  sidebar: {
-    width: '260px',
-    collapsedWidth: '72px',
-  },
-  header: {
-    height: '64px',
-  },
-  container: {
-    maxWidth: '1400px',
-    padding: '2rem',
-  },
-} as const
-
-/**
- * Breakpoint Tokens (matches Tailwind defaults)
- */
-export const breakpoints = {
-  sm: '640px',
-  md: '768px',
-  lg: '1024px',
-  xl: '1280px',
-  '2xl': '1536px',
-} as const
-
-/**
- * Animation Tokens (durations in ms)
- */
-export const animation = {
-  duration: {
-    fast: 150,
-    base: 200,
-    slow: 300,
-  },
-  easing: {
-    ease: 'cubic-bezier(0.4, 0, 0.2, 1)',
-    in: 'cubic-bezier(0.4, 0, 1, 1)',
-    out: 'cubic-bezier(0, 0, 0.2, 1)',
-    bounce: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
-  },
-} as const
-
-/**
- * Z-Index Tokens
- */
-export const zIndex = {
-  base: 0,
-  dropdown: 10,
-  sticky: 20,
-  fixed: 30,
-  modalBackdrop: 40,
-  modal: 50,
-  popover: 60,
-  tooltip: 70,
-  notification: 100,
-} as const
-
-/**
- * Status configuration for translation tasks
- */
-export const taskStatus = {
+export const taskStatusTokens = {
   pending: {
-    label: '等待中',
-    color: 'gray',
-    bgColor: 'bg-gray-100',
-    textColor: 'text-gray-800',
-    icon: 'clock',
+    label: "等待中",
+    tone: "muted",
   },
   processing: {
-    label: '进行中',
-    color: 'blue',
-    bgColor: 'bg-blue-100',
-    textColor: 'text-blue-800',
-    icon: 'loader',
+    label: "进行中",
+    tone: "info",
   },
   completed: {
-    label: '已完成',
-    color: 'green',
-    bgColor: 'bg-green-100',
-    textColor: 'text-green-800',
-    icon: 'check-circle',
+    label: "已完成",
+    tone: "success",
   },
   failed: {
-    label: '失败',
-    color: 'red',
-    bgColor: 'bg-red-100',
-    textColor: 'text-red-800',
-    icon: 'x-circle',
+    label: "失败",
+    tone: "danger",
   },
 } as const
 
-/**
- * Navigation configuration
- */
-export const navigation = {
+export const repositoryStatusTokens = {
+  active: {
+    label: "已启用",
+    tone: "success",
+  },
+  inactive: {
+    label: "未启用",
+    tone: "muted",
+  },
+  configured: {
+    label: "已配置",
+    tone: "info",
+  },
+  unconfigured: {
+    label: "未配置",
+    tone: "warning",
+  },
+} as const
+
+export const navigationTokens = {
   items: [
-    { title: '仓库', href: '/repositories', icon: 'Github' },
-    { title: '任务', href: '/tasks', icon: 'FileText' },
-    { title: '设置', href: '/settings', icon: 'Settings' },
+    { title: "仓库", href: "/repositories" },
+    { title: "任务", href: "/tasks" },
+    { title: "设置", href: "/settings" },
   ],
 } as const
