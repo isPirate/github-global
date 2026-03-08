@@ -9,11 +9,15 @@ interface AccountSectionProps {
 
 export default function AccountSection({ user }: AccountSectionProps) {
   return (
-    <div className="rounded-lg border bg-card p-6">
-      <h2 className="text-xl font-semibold mb-4">账户信息</h2>
+    <div className="rounded-[var(--radius-xl)] border border-border/70 bg-card/90 p-6 shadow-sm">
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold">账户信息</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          当前登录账户以及基础身份信息。
+        </p>
+      </div>
 
       <div className="space-y-4">
-        {/* User Info */}
         <div className="flex items-center gap-4">
           {user.avatarUrl && (
             <Image
@@ -32,15 +36,18 @@ export default function AccountSection({ user }: AccountSectionProps) {
           </div>
         </div>
 
-        {/* Account Details */}
-        <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-          <div>
+        <div className="grid gap-4 border-t border-border/70 pt-4 md:grid-cols-3">
+          <div className="rounded-[var(--radius-md)] bg-accent/50 p-4">
             <p className="text-sm text-muted-foreground">登录方式</p>
-            <p className="font-medium">GitHub OAuth</p>
+            <p className="mt-1 font-medium">GitHub OAuth</p>
           </div>
-          <div>
+          <div className="rounded-[var(--radius-md)] bg-accent/50 p-4">
             <p className="text-sm text-muted-foreground">账户类型</p>
-            <p className="font-medium">GitHub 用户</p>
+            <p className="mt-1 font-medium">GitHub 用户</p>
+          </div>
+          <div className="rounded-[var(--radius-md)] bg-accent/50 p-4">
+            <p className="text-sm text-muted-foreground">联系邮箱</p>
+            <p className="mt-1 font-medium">{user.email || '未设置邮箱'}</p>
           </div>
         </div>
       </div>

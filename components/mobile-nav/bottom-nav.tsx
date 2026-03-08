@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Github, FileText, Settings } from 'lucide-react'
+import { BarChart3, FileText, Github, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface NavItem {
@@ -12,17 +12,22 @@ interface NavItem {
 }
 
 const navigationItems: NavItem[] = [
+  { title: '总览', href: '/dashboard', icon: BarChart3 },
   { title: '仓库', href: '/repositories', icon: Github },
   { title: '任务', href: '/tasks', icon: FileText },
   { title: '设置', href: '/settings', icon: Settings },
 ]
 
-export function BottomNav({ processingTaskCount = 0 }: { processingTaskCount?: number }) {
+export function BottomNav({
+  processingTaskCount = 0,
+}: {
+  processingTaskCount?: number
+}) {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t lg:hidden safe-area-inset-bottom">
-      <div className="flex items-center justify-around h-16">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/92 backdrop-blur-xl lg:hidden">
+      <div className="grid h-20 grid-cols-4 gap-1 px-2 pb-4 pt-2">
         {navigationItems.map((item) => {
           const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
           const Icon = item.icon
@@ -32,29 +37,25 @@ export function BottomNav({ processingTaskCount = 0 }: { processingTaskCount?: n
             <Link
               key={item.href}
               href={item.href}
-              className="relative flex flex-col items-center justify-center flex-1 h-full"
+              className={cn(
+                'relative flex flex-col items-center justify-center gap-1 rounded-2xl text-xs font-medium transition-colors',
+                isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
+              )}
             >
               <div className="relative">
                 <Icon
                   className={cn(
-                    'w-6 h-6 transition-colors',
-                    isActive ? 'text-primary' : 'text-muted-foreground'
+                    'h-5 w-5',
+                    isActive ? 'text-primary-foreground' : 'text-muted-foreground'
                   )}
                 />
-                {badge > 0 && (
-                  <span className="absolute -top-1 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground px-1">
+                {badge > 0 ? (
+                  <span className="absolute -right-2 -top-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground shadow-sm">
                     {badge > 9 ? '9+' : badge}
                   </span>
-                )}
+                ) : null}
               </div>
-              <span
-                className={cn(
-                  'text-xs mt-1 transition-colors',
-                  isActive ? 'text-primary font-medium' : 'text-muted-foreground'
-                )}
-              >
-                {item.title}
-              </span>
+              <span>{item.title}</span>
             </Link>
           )
         })}

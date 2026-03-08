@@ -3,10 +3,14 @@ import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/db/prisma'
 import { getEncryptionService } from '@/lib/crypto/encryption'
 
+type RouteContext = {
+  params: Promise<{ id: string }>
+}
+
 // GET /api/repositories/[id]/config - Get translation configuration
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: RouteContext
 ) {
   try {
     const session = await getSession()
@@ -15,7 +19,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const repositoryId = params.id
+    const { id: repositoryId } = await context.params
 
     console.log('[Config API] Fetching config for repository:', repositoryId)
 
@@ -66,7 +70,7 @@ export async function GET(
 // POST /api/repositories/[id]/config - Save or update translation configuration
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: RouteContext
 ) {
   try {
     const session = await getSession()
@@ -75,7 +79,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const repositoryId = params.id
+    const { id: repositoryId } = await context.params
     const body = await request.json()
 
     // Validate the repository exists and belongs to the user

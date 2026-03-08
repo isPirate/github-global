@@ -1,6 +1,13 @@
 import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth/session'
 import AppLayout from '@/components/app-layout'
+import { DashboardOverview } from '@/components/dashboard/dashboard-overview'
+import { QuickActionsPanel } from '@/components/dashboard/quick-actions-panel'
+import { RecentActivityList } from '@/components/dashboard/recent-activity-list'
+import { RepositorySummaryPanel } from '@/components/dashboard/repository-summary-panel'
+import { PageHeader } from '@/components/layout/page-header'
+import { PageShell } from '@/components/layout/page-shell'
+import { getSession } from '@/lib/auth/session'
+import { prisma } from '@/lib/db/prisma'
 
 export default async function DashboardPage() {
   const session = await getSession()
@@ -11,74 +18,125 @@ export default async function DashboardPage() {
 
   const { user } = session
 
+  const [repositoryCount, configuredCount, totalTaskCount, processingCount, installationCount] =
+    await Promise.all([
+      prisma.repository.count({
+        where: { userId: user.id },
+      }),
+      prisma.translationConfig.count({
+        where: {
+          repository: {
+            userId: user.id,
+          },
+        },
+      }),
+      prisma.translationTask.count({
+        where: {
+          repository: {
+            userId: user.id,
+          },
+        },
+      }),
+      prisma.translationTask.count({
+        where: {
+          status: 'processing',
+          repository: {
+            userId: user.id,
+          },
+        },
+      }),
+      prisma.gitHubAppInstallation.count({
+        where: { userId: user.id },
+      }),
+    ])
+
+  const [recentTasks, repositories] = await Promise.all([
+    prisma.translationTask.findMany({
+      where: {
+        repository: {
+          userId: user.id,
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 4,
+      select: {
+        id: true,
+        status: true,
+        triggerType: true,
+        processedFiles: true,
+        totalFiles: true,
+        createdAt: true,
+        repository: {
+          select: {
+            name: true,
+            fullName: true,
+          },
+        },
+      },
+    }),
+    prisma.repository.findMany({
+      where: { userId: user.id },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+      take: 4,
+      select: {
+        id: true,
+        name: true,
+        fullName: true,
+        stargazersCount: true,
+        isActive: true,
+        config: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    }),
+  ])
+
   return (
-    <AppLayout user={{ username: user.username, avatarUrl: user.avatarUrl }}>
-      <div className="container mx-auto py-8 px-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground mt-2">
-            欢迎回来, {user.username}!
-          </p>
+    <AppLayout
+      user={{ username: user.username, avatarUrl: user.avatarUrl }}
+      processingTaskCount={processingCount}
+    >
+      <PageShell spacing="comfortable">
+        <PageHeader
+          eyebrow="Dashboard"
+          title={`欢迎回来，${user.username}`}
+          description="这里集中展示当前仓库状态、最近任务和需要优先处理的操作。"
+        />
+
+        <DashboardOverview
+          repositoryCount={repositoryCount}
+          configuredCount={configuredCount}
+          totalTaskCount={totalTaskCount}
+          processingCount={processingCount}
+        />
+
+        <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+          <RecentActivityList tasks={recentTasks} />
+          <RepositorySummaryPanel
+            repositories={repositories.map((repository) => ({
+              id: repository.id,
+              name: repository.name,
+              fullName: repository.fullName,
+              stargazersCount: repository.stargazersCount,
+              isActive: repository.isActive,
+              hasConfig: Boolean(repository.config),
+            }))}
+          />
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <div className="rounded-lg border bg-card p-6">
-            <h2 className="text-xl font-semibold mb-4">我的仓库</h2>
-            <p className="text-muted-foreground">
-              查看和管理您的 GitHub 仓库翻译项目
-            </p>
-            <a
-              href="/repositories"
-              className="inline-block mt-4 text-primary hover:underline"
-            >
-              查看仓库 →
-            </a>
-          </div>
-
-          <div className="rounded-lg border bg-card p-6">
-            <h2 className="text-xl font-semibold mb-4">翻译任务</h2>
-            <p className="text-muted-foreground">
-              查看翻译进度和任务状态
-            </p>
-            <a
-              href="/tasks"
-              className="inline-block mt-4 text-primary hover:underline"
-            >
-              查看任务 →
-            </a>
-          </div>
-
-          <div className="rounded-lg border bg-card p-6">
-            <h2 className="text-xl font-semibold mb-4">设置</h2>
-            <p className="text-muted-foreground">
-              配置您的账户和偏好设置
-            </p>
-            <a
-              href="/settings"
-              className="inline-block mt-4 text-primary hover:underline"
-            >
-              打开设置 →
-            </a>
-          </div>
-        </div>
-
-        <div className="mt-8">
-          <div className="rounded-lg border bg-card p-6">
-            <h2 className="text-xl font-semibold mb-4">账户信息</h2>
-            <div className="space-y-2">
-              <p>
-                <span className="font-medium">用户名:</span> {user.username}
-              </p>
-              <p>
-                <span className="font-medium">邮箱:</span> {user.email || '未设置'}
-              </p>
-              <p>
-                <span className="font-medium">GitHub ID:</span> {user.githubId}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+        <QuickActionsPanel
+          username={user.username}
+          email={user.email}
+          githubId={user.githubId}
+          installationCount={installationCount}
+        />
+      </PageShell>
     </AppLayout>
   )
 }

@@ -28,11 +28,6 @@ export class TranslationQueue {
     this.queue.on('completed', (result) => {
       console.log('Translation task completed:', result)
     })
-
-    // 任务失败日志
-    this.queue.on('failed', (error, task) => {
-      console.error('Translation task failed:', error, task)
-    })
   }
 
   // 单例模式
@@ -50,7 +45,11 @@ export class TranslationQueue {
 
   // 添加任务到队列（支持选项）
   add(handler: () => Promise<void>, options?: { taskId?: string }): Promise<void> {
-    return this.queue.add(handler, options)
+    if (options?.taskId) {
+      return this.queue.add(handler, { id: options.taskId })
+    }
+
+    return this.queue.add(handler)
   }
 
   // 获取队列状态

@@ -1,14 +1,16 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { FileText, Github, Globe } from 'lucide-react'
 import ClientAppLayout from '@/components/client-app-layout'
-import { QuickTranslateButton } from '@/components/repository/quick-translate-button'
-import { SimpleStatCard } from '@/components/repository/stat-card'
-import { Github, Globe, FileText, RefreshCw, Settings, Lock } from 'lucide-react'
+import { RepositoryEmptyState } from '@/components/repository/repository-empty-state'
+import { RepositoryGrid } from '@/components/repository/repository-grid'
+import { RepositoryToolbar } from '@/components/repository/repository-toolbar'
+import { PageHeader } from '@/components/layout/page-header'
+import { PageShell, PageSection } from '@/components/layout/page-shell'
+import { StatCard } from '@/components/metrics/stat-card'
 import { useToast } from '@/components/toast/use-toast'
-import { cn } from '@/lib/utils'
 
 interface Repository {
   id: number
@@ -73,24 +75,16 @@ export default function RepositoriesPage() {
 
       const data: RepositoriesResponse = await response.json()
       setInstallations(data.installations)
-
-      console.log('[Repositories Page] Loaded repositories:', data.repositories.map(r => ({
-        id: r.id,
-        dbId: r.dbId,
-        name: r.name,
-      })))
-
       setRepositories(data.repositories)
-
-      // Calculate stats
       setStats({
         total: data.repositories.length,
-        active: data.repositories.filter(r => r.isActive).length,
-        configured: data.repositories.filter(r => r.hasConfig).length,
+        active: data.repositories.filter((repository) => repository.isActive).length,
+        configured: data.repositories.filter((repository) => repository.hasConfig)
+          .length,
       })
     } catch (err) {
       console.error('Error fetching repositories:', err)
-      setError('Failed to load repositories. Please try again.')
+      setError('加载仓库失败，请稍后重试。')
     } finally {
       setLoading(false)
     }
@@ -145,12 +139,11 @@ export default function RepositoriesPage() {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || error.message || 'Failed to sync')
+        const errorData = await response.json()
+        throw new Error(errorData.error || errorData.message || 'Failed to sync')
       }
 
       const result = await response.json()
-      console.log('[Sync] Result:', result)
 
       if (result.synced > 0) {
         toast({
@@ -181,10 +174,10 @@ export default function RepositoriesPage() {
   if (loading || !user) {
     return (
       <ClientAppLayout user={{ username: 'Loading...' }}>
-        <div className="flex items-center justify-center h-64">
+        <div className="flex h-64 items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-4 text-muted-foreground">Loading repositories...</p>
+            <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-primary" />
+            <p className="mt-4 text-muted-foreground">正在加载仓库...</p>
           </div>
         </div>
       </ClientAppLayout>
@@ -193,228 +186,90 @@ export default function RepositoriesPage() {
 
   return (
     <ClientAppLayout user={user}>
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3 mb-8">
-        <SimpleStatCard
-          title="全部仓库"
-          value={stats.total}
-          icon={Globe}
+      <PageShell spacing="comfortable">
+        <PageHeader
+          eyebrow="Repositories"
+          title="我的仓库"
+          description="集中管理 GitHub 仓库、授权范围、翻译配置和快速执行入口。"
         />
-        <SimpleStatCard
-          title="已启用"
-          value={stats.active}
-          icon={Github}
-        />
-        <SimpleStatCard
-          title="已配置"
-          value={stats.configured}
-          icon={FileText}
-        />
-      </div>
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">我的仓库</h1>
-          <p className="text-muted-foreground mt-2">
-            管理您的 GitHub 仓库翻译项目
-          </p>
+        <div className="grid gap-4 md:grid-cols-3">
+          <StatCard
+            title="全部仓库"
+            value={stats.total}
+            description="当前同步到控制台的仓库数量"
+            icon={<Globe className="h-5 w-5" />}
+          />
+          <StatCard
+            title="已启用"
+            value={stats.active}
+            description="允许发起翻译任务的仓库"
+            icon={<Github className="h-5 w-5" />}
+            emphasis="success"
+          />
+          <StatCard
+            title="已配置"
+            value={stats.configured}
+            description="已完成翻译参数配置的仓库"
+            icon={<FileText className="h-5 w-5" />}
+            emphasis="primary"
+          />
         </div>
-        <button
-          onClick={fetchRepositories}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm border rounded-md hover:bg-muted transition-colors"
-        >
-          <RefreshCw className="w-4 h-4" />
-          刷新
-        </button>
-      </div>
 
-      {error && (
-        <div className="mb-6 rounded-lg border border-red-500/50 bg-red-500/10 p-4 text-red-600">
-          {error}
-        </div>
-      )}
+        {error ? (
+          <PageSection className="rounded-[var(--radius-xl)] border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+            {error}
+          </PageSection>
+        ) : null}
 
-      {installations.length === 0 ? (
-        <div className="rounded-lg border bg-card p-12 text-center">
-          <div className="max-w-md mx-auto">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-              <Globe className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h2 className="text-xl font-semibold mb-2">未安装 GitHub App</h2>
-            <p className="text-muted-foreground mb-6">
-              请先安装 GitHub Global App 到您的 GitHub 账户
-            </p>
-            <div className="flex flex-col gap-3">
-              {installationUrl ? (
-                <>
-                  <button
-                    onClick={syncInstallations}
-                    disabled={syncing}
-                    className="inline-flex items-center justify-center gap-2 rounded-md border px-6 py-3 hover:bg-muted disabled:opacity-50 transition-colors"
-                  >
-                    <RefreshCw className={cn('w-4 h-4', syncing && 'animate-spin')} />
-                    {syncing ? '同步中...' : '已安装？点击同步'}
-                  </button>
-                  <a
-                    href={installationUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-primary-foreground hover:bg-primary/90 transition-colors"
-                  >
-                    安装 GitHub App
-                  </a>
-                </>
-              ) : (
-                <span className="text-muted-foreground">加载中...</span>
-              )}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-semibold">可用的仓库</h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  显示 GitHub App 已授权的仓库。要添加新仓库，请在 GitHub 设置中管理权限。
-                </p>
-              </div>
-              {installationUrl && (
-                <a
-                  href={installationUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm hover:bg-muted transition-colors"
-                >
-                  <Settings className="w-4 h-4" />
-                  管理仓库权限
-                </a>
-              )}
-            </div>
+        {installations.length === 0 ? (
+          <RepositoryEmptyState
+            variant="install"
+            installationUrl={installationUrl}
+            syncing={syncing}
+            onSync={syncInstallations}
+          />
+        ) : (
+          <PageShell>
+            <RepositoryToolbar
+              onRefresh={fetchRepositories}
+              installationUrl={installationUrl}
+            />
+
             {repositories.length === 0 ? (
-              <div className="rounded-lg border bg-card p-8 text-center">
-                <p className="text-muted-foreground mb-4">
-                  没有找到仓库。GitHub App 可能没有访问任何仓库的权限。
-                </p>
-                {installationUrl && (
-                  <a
-                    href={installationUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-primary hover:underline"
-                  >
-                    前往 GitHub 添加仓库权限 →
-                  </a>
-                )}
-              </div>
+              <RepositoryEmptyState
+                variant="empty"
+                installationUrl={installationUrl}
+              />
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {repositories.map((repo) => (
+              <RepositoryGrid repositories={repositories} />
+            )}
+
+            <PageSection surface className="p-6 md:p-8">
+              <h2 className="text-xl font-semibold">添加新仓库的路径</h2>
+              <div className="mt-5 grid gap-4 md:grid-cols-3">
+                {[
+                  '点击“管理仓库权限”，进入 GitHub App 授权页面。',
+                  '在 GitHub 中选择要授权的仓库或直接授予全部仓库权限。',
+                  '返回当前页面刷新列表，再进入配置页完成翻译设置。',
+                ].map((item, index) => (
                   <div
-                    key={repo.id}
-                    className="rounded-lg border bg-card p-5 space-y-4 hover:border-primary/50 transition-all"
+                    key={item}
+                    className="rounded-[var(--radius-lg)] border border-border/70 bg-background/85 p-4"
                   >
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-lg truncate flex items-center gap-2">
-                          {repo.name}
-                          {repo.private && (
-                            <Lock className="w-3 h-3 text-muted-foreground shrink-0" aria-label="Private repository" />
-                          )}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {repo.owner.login}/{repo.name}
-                        </p>
-                      </div>
-                      {repo.language && (
-                        <span className="shrink-0 text-xs bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-1 rounded">
-                          {repo.language}
-                        </span>
-                      )}
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                      {index + 1}
                     </div>
-
-                    {/* Description */}
-                    {repo.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {repo.description}
-                      </p>
-                    )}
-
-                    {/* Stats */}
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        ⭐ {repo.stargazers_count}
-                      </span>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 pt-2 border-t">
-                      {repo.dbId ? (
-                        <>
-                          <QuickTranslateButton
-                            repositoryId={repo.dbId}
-                            repositoryName={repo.name}
-                            isActive={repo.isActive}
-                            hasConfig={repo.hasConfig}
-                            variant="compact"
-                          />
-                          <Link
-                            href={`/repositories/${repo.dbId}/config`}
-                            className="ml-auto inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium hover:bg-muted transition-colors"
-                          >
-                            <Settings className="w-4 h-4" />
-                          </Link>
-                        </>
-                      ) : (
-                        <span className="ml-auto text-sm text-muted-foreground">
-                          同步中...
-                        </span>
-                      )}
-                    </div>
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                      {item}
+                    </p>
                   </div>
                 ))}
               </div>
-            )}
-          </div>
-
-          {/* Instructions */}
-          <div className="mt-8 rounded-lg border bg-card p-6">
-            <h2 className="text-xl font-semibold mb-4">如何添加新仓库？</h2>
-            <div className="space-y-4 text-muted-foreground">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
-                  1
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">点击上方“管理仓库权限”按钮</p>
-                  <p className="text-sm">会跳转到 GitHub App 安装页面</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
-                  2
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">在 GitHub 上选择要授权的仓库</p>
-                  <p className="text-sm">可以选择“All repositories”或特定的仓库</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
-                  3
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">返回此页面并点击“刷新”</p>
-                  <p className="text-sm">新仓库会出现在列表中，点击“配置翻译”即可开始使用</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+            </PageSection>
+          </PageShell>
+        )}
+      </PageShell>
     </ClientAppLayout>
   )
 }

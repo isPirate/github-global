@@ -2,7 +2,9 @@ import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/db/prisma'
 import AppLayout from '@/components/app-layout'
+import { PageShell } from '@/components/layout/page-shell'
 import SettingsForm from './_components/settings-form'
+import SettingsPageHeader from './_components/settings-page-header'
 
 export default async function SettingsPage() {
   const session = await getSession()
@@ -55,15 +57,8 @@ export default async function SettingsPage() {
 
   return (
     <AppLayout user={{ username: session.user.username, avatarUrl: session.user.avatarUrl }}>
-      <div className="container mx-auto py-8 px-4 max-w-4xl">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">设置</h1>
-          <p className="text-muted-foreground mt-2">
-            配置您的账户和偏好设置
-          </p>
-        </div>
-
+      <PageShell spacing="comfortable">
+        <SettingsPageHeader />
         <SettingsForm
           initialSettings={initialSettings}
           user={{
@@ -74,7 +69,7 @@ export default async function SettingsPage() {
           }}
           installations={formattedInstallations}
         />
-      </div>
+      </PageShell>
     </AppLayout>
   )
 }

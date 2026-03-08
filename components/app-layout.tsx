@@ -1,4 +1,4 @@
-import ClientAppLayout from '@/components/client-app-layout'
+import ClientAppLayout from "@/components/client-app-layout"
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -9,7 +9,11 @@ interface AppLayoutProps {
   processingTaskCount?: number
 }
 
-export default function AppLayout({ children, user, processingTaskCount = 0 }: AppLayoutProps) {
+export default function AppLayout({
+  children,
+  user,
+  processingTaskCount = 0,
+}: AppLayoutProps) {
   return (
     <ClientAppLayout user={user} processingTaskCount={processingTaskCount}>
       {children}

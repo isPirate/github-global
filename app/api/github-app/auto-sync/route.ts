@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     // Find installations for the current user
     const userInstallations = installations.filter(
-      (inst: any) => inst.account.login === currentUser.username
+      (inst: any) => inst.account?.login === currentUser.username
     )
 
     if (userInstallations.length === 0) {
@@ -69,6 +69,11 @@ export async function POST(request: NextRequest) {
     let syncedCount = 0
     for (const installation of userInstallations) {
       try {
+        if (!installation.account) {
+          console.warn('[Sync] Installation missing account data:', installation.id)
+          continue
+        }
+
         await prisma.gitHubAppInstallation.upsert({
           where: { installationId: BigInt(installation.id) },
           create: {

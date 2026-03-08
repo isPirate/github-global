@@ -5,6 +5,13 @@ export async function GET(request: NextRequest) {
   const redirectUri = process.env.GITHUB_OAUTH_CALLBACK_URL
   const state = Math.random().toString(36).substring(2, 15)
 
+  if (!clientId || !redirectUri) {
+    return NextResponse.json(
+      { error: 'GitHub OAuth environment variables are not configured' },
+      { status: 500 }
+    )
+  }
+
   const url = new URL('https://github.com/login/oauth/authorize')
   url.searchParams.set('client_id', clientId)
   url.searchParams.set('redirect_uri', redirectUri)

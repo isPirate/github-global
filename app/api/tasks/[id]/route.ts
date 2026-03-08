@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/db/prisma'
 
+type RouteContext = {
+  params: Promise<{ id: string }>
+}
+
 // GET /api/tasks/[id] - Get task details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: RouteContext
 ) {
   try {
     const session = await getSession()
@@ -14,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const taskId = params.id
+    const { id: taskId } = await context.params
 
     const task = await prisma.translationTask.findFirst({
       where: {
@@ -61,7 +65,7 @@ export async function GET(
 // POST /api/tasks/[id]/retry - Retry a failed task
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: RouteContext
 ) {
   try {
     const session = await getSession()
@@ -70,7 +74,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const taskId = params.id
+    const { id: taskId } = await context.params
 
     // Get the task
     const task = await prisma.translationTask.findFirst({
@@ -116,7 +120,7 @@ export async function POST(
 
     // Re-add to queue
     const { translationQueue } = await import('@/lib/translation/queue')
-    const { processTranslationTask } = await import('@/app/api/repositories/[id]/translate/route')
+    const { processTranslationTask } = await import('@/lib/translation/process-task')
 
     translationQueue.add(
       async () => {

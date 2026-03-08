@@ -1,10 +1,10 @@
 'use client'
 
 import Image from 'next/image'
-import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Settings, LogOut, ChevronDown } from 'lucide-react'
+import { LogOut, Settings, UserCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface UserMenuProps {
@@ -33,7 +33,7 @@ export function UserMenu({ user, className }: UserMenuProps) {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' })
+      await fetch('/api/auth/signout', { method: 'POST' })
       router.push('/login')
     } catch (error) {
       console.error('Logout failed:', error)
@@ -43,66 +43,68 @@ export function UserMenu({ user, className }: UserMenuProps) {
   return (
     <div ref={menuRef} className={cn('relative', className)}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 p-1 rounded-md hover:bg-muted transition-colors"
+        type="button"
+        onClick={() => setIsOpen((value) => !value)}
+        className="inline-flex items-center gap-3 rounded-2xl border border-border/70 bg-background/85 p-1.5 pr-3 transition-colors hover:bg-background"
         aria-label="User menu"
       >
         {user.avatarUrl ? (
           <Image
             src={user.avatarUrl}
             alt={user.username}
-            width={32}
-            height={32}
-            className="h-8 w-8 rounded-full ring-2 ring-background hover:ring-muted transition-all"
+            width={36}
+            height={36}
+            className="h-9 w-9 rounded-2xl object-cover"
           />
         ) : (
-          <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-medium text-sm">
+          <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 font-semibold text-primary">
             {user.username.charAt(0).toUpperCase()}
           </div>
         )}
-        <ChevronDown className={cn(
-          'w-4 h-4 text-muted-foreground transition-transform',
-          isOpen && 'rotate-180'
-        )} />
+        <div className="hidden text-left md:block">
+          <p className="text-sm font-medium text-foreground">{user.username}</p>
+          <p className="text-xs text-muted-foreground">GitHub 用户</p>
+        </div>
       </button>
 
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-
-          {/* Dropdown */}
-          <div className="absolute right-0 top-full mt-2 w-56 bg-background border rounded-lg shadow-lg z-50 overflow-hidden">
-            {/* User info */}
-            <div className="px-4 py-3 border-b">
-              <p className="text-sm font-medium">{user.username}</p>
-              <p className="text-xs text-muted-foreground">GitHub Account</p>
-            </div>
-
-            {/* Menu items */}
-            <div className="py-1">
-              <Link
-                href="/settings"
-                onClick={() => setIsOpen(false)}
-                className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-muted transition-colors"
-              >
-                <Settings className="w-4 h-4 text-muted-foreground" />
-                设置
-              </Link>
-              <button
-                onClick={() => {
-                  setIsOpen(false)
-                  handleLogout()
-                }}
-                className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-muted transition-colors w-full text-left text-red-600"
-              >
-                <LogOut className="w-4 h-4" />
-                退出登录
-              </button>
-            </div>
+      {isOpen ? (
+        <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-[var(--radius-lg)] border border-border/70 bg-popover p-2 shadow-[var(--shadow-md)]">
+          <div className="mb-2 rounded-[var(--radius-md)] bg-accent/60 px-3 py-2">
+            <p className="truncate text-sm font-medium">{user.username}</p>
+            <p className="text-xs text-muted-foreground">控制台账户菜单</p>
           </div>
-        </>
-      )}
+
+          <div className="space-y-1">
+            <Link
+              href="/dashboard"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+            >
+              <UserCircle2 className="h-4 w-4 text-muted-foreground" />
+              总览
+            </Link>
+            <Link
+              href="/settings"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+            >
+              <Settings className="h-4 w-4 text-muted-foreground" />
+              设置
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(false)
+                handleLogout()
+              }}
+              className="flex w-full items-center gap-3 rounded-[var(--radius-md)] px-3 py-2 text-left text-sm text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-950"
+            >
+              <LogOut className="h-4 w-4" />
+              退出登录
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }

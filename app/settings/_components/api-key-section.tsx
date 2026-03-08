@@ -37,7 +37,7 @@ export default function ApiKeySection({
   }
 
   return (
-    <div className="rounded-lg border bg-card p-6">
+    <div className="rounded-[var(--radius-xl)] border border-border/70 bg-card/90 p-6 shadow-sm">
       <h2 className="text-xl font-semibold mb-4">OpenRouter API 密钥</h2>
       <p className="text-sm text-muted-foreground mb-6">
         设置全局 API 密钥，用于所有仓库的翻译。您也可以在单个仓库中配置专属密钥
@@ -45,7 +45,7 @@ export default function ApiKeySection({
 
       <div className="space-y-4">
         {/* Current Status */}
-        <div className="flex items-center gap-3 p-4 rounded-md bg-muted">
+        <div className="flex items-center gap-3 rounded-[var(--radius-md)] bg-accent/50 p-4">
           <div
             className={`w-3 h-3 rounded-full ${hasKey ? 'bg-green-500' : 'bg-gray-400'}`}
           />
@@ -59,7 +59,7 @@ export default function ApiKeySection({
           <div className="flex gap-3">
             <button
               onClick={() => setShowForm(true)}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+              className="rounded-2xl bg-primary px-4 py-2 text-primary-foreground transition-colors hover:bg-primary/90"
             >
               {hasKey ? '更新密钥' : '配置密钥'}
             </button>
@@ -67,10 +67,10 @@ export default function ApiKeySection({
               <button
                 onClick={handleDelete}
                 disabled={saving}
-                className={`px-4 py-2 rounded-md transition-colors ${
+                className={`rounded-2xl px-4 py-2 transition-colors ${
                   confirmDelete
                     ? 'bg-red-600 text-white hover:bg-red-700'
-                    : 'border border-red-500 text-red-600 hover:bg-red-50'
+                    : 'border border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30'
                 }`}
               >
                 {confirmDelete ? '确认删除' : '删除密钥'}
@@ -78,7 +78,7 @@ export default function ApiKeySection({
             )}
           </div>
         ) : (
-          <div className="space-y-4 p-4 border rounded-md">
+          <div className="space-y-4 rounded-[var(--radius-md)] border border-border/70 p-4">
             <div>
               <label className="block text-sm font-medium mb-2">API Key</label>
               <div className="relative">
@@ -87,7 +87,7 @@ export default function ApiKeySection({
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   placeholder="sk-or-..."
-                  className="w-full px-3 py-2 pr-20 border rounded-md"
+                  className="w-full rounded-2xl border border-border/70 px-3 py-2 pr-20 outline-none transition focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
                 />
                 <button
                   type="button"
@@ -115,7 +115,7 @@ export default function ApiKeySection({
               <button
                 onClick={handleSave}
                 disabled={saving || !apiKey.trim()}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                className="rounded-2xl bg-primary px-4 py-2 text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
               >
                 {saving ? '保存中...' : '保存'}
               </button>
@@ -125,7 +125,7 @@ export default function ApiKeySection({
                   setApiKey('')
                   setConfirmDelete(false)
                 }}
-                className="px-4 py-2 border rounded-md hover:bg-muted transition-colors"
+                className="rounded-2xl border border-border/70 px-4 py-2 transition-colors hover:bg-accent"
               >
                 取消
               </button>
@@ -133,8 +133,7 @@ export default function ApiKeySection({
           </div>
         )}
 
-        {/* Info */}
-        <div className="rounded-md bg-blue-500/10 border border-blue-500/30 p-4">
+        <div className="rounded-[var(--radius-md)] border border-blue-500/30 bg-blue-500/10 p-4">
           <p className="text-sm text-blue-700 dark:text-blue-400">
             <strong>提示：</strong>密钥使用 AES-256-GCM 加密存储，仅在翻译时解密使用。
           </p>

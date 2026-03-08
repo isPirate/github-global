@@ -103,8 +103,14 @@ export async function getUserRepositories(accessToken: string): Promise<{
     installations: installations.map((inst) => ({
       id: inst.id,
       account: {
-        login: inst.account?.login || '',
-        type: inst.account_type,
+        login:
+          inst.account && 'login' in inst.account
+            ? inst.account.login
+            : inst.account?.name || '',
+        type:
+          inst.account && 'login' in inst.account
+            ? inst.account.type
+            : 'Organization',
       },
     })),
     repositories,

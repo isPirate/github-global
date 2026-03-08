@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/db/prisma'
 
+type RouteContext = {
+  params: Promise<{ id: string }>
+}
+
 // POST /api/repositories/[id]/disable - Disable translation for a repository
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: RouteContext
 ) {
   try {
     const session = await getSession()
@@ -14,7 +18,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const repositoryId = params.id
+    const { id: repositoryId } = await context.params
 
     // Verify the repository exists and belongs to the user
     const repository = await prisma.repository.findFirst({

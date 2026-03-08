@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
-export default function LoginPage() {
+function LoginContent() {
   const searchParams = useSearchParams()
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
@@ -41,18 +41,18 @@ export default function LoginPage() {
   }, [searchParams])
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold">GitHub Global</CardTitle>
           <CardDescription>自动化翻译您的 GitHub 仓库文档</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {errorMessage && (
+          {errorMessage ? (
             <div className="rounded-lg border border-red-500/50 bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-400">
               {errorMessage}
             </div>
-          )}
+          ) : null}
 
           <Button asChild className="w-full" size="lg">
             <a href="/api/auth/signin">
@@ -73,5 +73,19 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-background">
+          <div className="text-sm text-muted-foreground">加载登录状态...</div>
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   )
 }

@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      const installations = response.data as any[]
+      const installations = response.data.installations as any[]
 
       // Filter installations for our GitHub App
       const appInstallations = installations.filter((inst) => {

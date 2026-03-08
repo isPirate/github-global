@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { CheckCircle2, AlertTriangle } from 'lucide-react'
 import PreferencesSection from './preferences-section'
 import ApiKeySection from './api-key-section'
 import GitHubAppSection from './github-app-section'
@@ -140,41 +141,37 @@ export default function SettingsForm({
 
   return (
     <div className="space-y-6">
-      {/* Messages */}
       {error && (
-        <div className="rounded-lg border border-red-500/50 bg-red-500/10 p-4 text-red-600">
-          {error}
+        <div className="flex items-start gap-3 rounded-[var(--radius-lg)] border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+          <div>{error}</div>
         </div>
       )}
       {success && (
-        <div className="rounded-lg border border-green-500/50 bg-green-500/10 p-4 text-green-600">
-          设置已保存！
+        <div className="flex items-start gap-3 rounded-[var(--radius-lg)] border border-emerald-200 bg-emerald-50 p-4 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">
+          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+          <div>设置已保存。</div>
         </div>
       )}
 
-      {/* Account Section - 账户信息放最上面 */}
       <AccountSection user={user} />
-
-      {/* Preferences Section */}
-      <PreferencesSection
-        settings={settings}
-        onUpdate={handleUpdateSettings}
-        onSave={handleSavePreferences}
-        saving={saving}
-      />
-
-      {/* API Key Section */}
-      <ApiKeySection
-        hasKey={settings.hasOpenRouterKey}
-        onSave={handleSaveApiKey}
-        onDelete={handleDeleteApiKey}
-        saving={saving}
-      />
-
-      {/* GitHub App Section */}
-      <GitHubAppSection installations={installations} />
-
-      {/* Danger Zone Section - 危险操作放最后 */}
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <PreferencesSection
+          settings={settings}
+          onUpdate={handleUpdateSettings}
+          onSave={handleSavePreferences}
+          saving={saving}
+        />
+        <div className="space-y-6">
+          <ApiKeySection
+            hasKey={settings.hasOpenRouterKey}
+            onSave={handleSaveApiKey}
+            onDelete={handleDeleteApiKey}
+            saving={saving}
+          />
+          <GitHubAppSection installations={installations} />
+        </div>
+      </div>
       <DangerZoneSection />
     </div>
   )

@@ -39,7 +39,7 @@ export default function GitHubAppSection({ installations }: GitHubAppSectionProp
   }, [])
 
   return (
-    <div className="rounded-lg border bg-card p-6">
+    <div className="rounded-[var(--radius-xl)] border border-border/70 bg-card/90 p-6 shadow-sm">
       <h2 className="text-xl font-semibold mb-4">GitHub App 管理</h2>
       <p className="text-sm text-muted-foreground mb-6">
         管理您的 GitHub App 安装和仓库权限
@@ -53,7 +53,7 @@ export default function GitHubAppSection({ installations }: GitHubAppSectionProp
             {installations.map((installation) => (
               <div
                 key={installation.id}
-                className="flex items-center justify-between p-4 border rounded-md"
+                className="flex items-center justify-between rounded-[var(--radius-md)] border border-border/70 p-4"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
@@ -74,7 +74,7 @@ export default function GitHubAppSection({ installations }: GitHubAppSectionProp
             ))}
           </div>
         ) : (
-          <div className="p-4 border rounded-md bg-muted">
+          <div className="rounded-[var(--radius-md)] border border-border/70 bg-accent/40 p-4">
             <p className="text-sm text-muted-foreground">
               尚未安装 GitHub App。安装后可以访问您的仓库并进行翻译。
             </p>
@@ -89,7 +89,7 @@ export default function GitHubAppSection({ installations }: GitHubAppSectionProp
                 href={appInfo.installationUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                className="rounded-2xl bg-primary px-4 py-2 text-primary-foreground transition-colors hover:bg-primary/90"
               >
                 {installations.length > 0 ? '添加更多安装' : '安装 GitHub App'}
               </a>
@@ -97,7 +97,7 @@ export default function GitHubAppSection({ installations }: GitHubAppSectionProp
                 href="https://github.com/settings/installations"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2 border rounded-md hover:bg-muted transition-colors"
+                className="rounded-2xl border border-border/70 px-4 py-2 transition-colors hover:bg-accent"
               >
                 管理安装
               </a>
@@ -111,7 +111,7 @@ export default function GitHubAppSection({ installations }: GitHubAppSectionProp
         </div>
 
         {/* Info */}
-        <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-4">
+        <div className="rounded-[var(--radius-md)] border border-amber-500/30 bg-amber-500/10 p-4">
           <p className="text-sm text-amber-700 dark:text-amber-400">
             <strong>说明：</strong>GitHub App 用于访问您的仓库并创建翻译 PR。您可以在 GitHub 设置中随时撤销权限。
           </p>

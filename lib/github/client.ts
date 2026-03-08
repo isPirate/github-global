@@ -55,7 +55,7 @@ export class GitHubClient {
         url: config.url,
         content_type: 'json',
         secret: config.secret,
-        insecure_ssl: false,
+        insecure_ssl: '0',
       },
     })
 

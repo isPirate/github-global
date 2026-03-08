@@ -44,7 +44,7 @@ export default function PreferencesSection({
   }
 
   return (
-    <div className="rounded-lg border bg-card p-6">
+    <div className="rounded-[var(--radius-xl)] border border-border/70 bg-card/90 p-6 shadow-sm">
       <h2 className="text-xl font-semibold mb-4">偏好设置</h2>
       <p className="text-sm text-muted-foreground mb-6">
         配置默认的翻译偏好，这些设置将作为新仓库的默认值
@@ -63,7 +63,7 @@ export default function PreferencesSection({
             {SUPPORTED_LANGUAGES.map((lang) => (
               <label
                 key={lang.code}
-                className={`flex items-center gap-2 p-3 border rounded-md cursor-pointer hover:bg-muted transition-colors ${
+                className={`flex cursor-pointer items-center gap-2 rounded-[var(--radius-md)] border p-3 transition-colors hover:bg-accent ${
                   selectedLanguages.includes(lang.code)
                     ? 'bg-primary/10 border-primary'
                     : ''
@@ -82,7 +82,7 @@ export default function PreferencesSection({
         </div>
 
         {/* Auto Create PR */}
-        <div className="flex items-center justify-between py-3 border-t">
+        <div className="flex items-center justify-between border-t border-border/70 py-3">
           <div>
             <p className="font-medium">自动创建 PR</p>
             <p className="text-sm text-muted-foreground">
@@ -101,7 +101,7 @@ export default function PreferencesSection({
         </div>
 
         {/* Save Translation History */}
-        <div className="flex items-center justify-between py-3 border-t">
+        <div className="flex items-center justify-between border-t border-border/70 py-3">
           <div>
             <p className="font-medium">保存翻译历史</p>
             <p className="text-sm text-muted-foreground">
@@ -120,7 +120,7 @@ export default function PreferencesSection({
         </div>
 
         {/* Email Notifications */}
-        <div className="flex items-center justify-between py-3 border-t">
+        <div className="flex items-center justify-between border-t border-border/70 py-3">
           <div>
             <p className="font-medium">邮件通知</p>
             <p className="text-sm text-muted-foreground">
@@ -143,7 +143,7 @@ export default function PreferencesSection({
           <button
             onClick={onSave}
             disabled={saving}
-            className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 transition-colors"
+            className="rounded-2xl bg-primary px-6 py-2 text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
             {saving ? '保存中...' : '保存偏好设置'}
           </button>
