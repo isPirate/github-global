@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import ClientAppLayout from '@/components/client-app-layout'
@@ -8,6 +8,7 @@ import { QuickTranslateButton } from '@/components/repository/quick-translate-bu
 import { SimpleStatCard } from '@/components/repository/stat-card'
 import { Github, Globe, FileText, RefreshCw, Settings, Lock } from 'lucide-react'
 import { useToast } from '@/components/toast/use-toast'
+import { cn } from '@/lib/utils'
 
 interface Repository {
   id: number
@@ -60,11 +61,42 @@ export default function RepositoriesPage() {
     configured: 0,
   })
 
-  useEffect(() => {
-    checkAuthAndFetch()
+  const fetchRepositories = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const response = await fetch('/api/repositories')
+      if (!response.ok) {
+        throw new Error('Failed to fetch repositories')
+      }
+
+      const data: RepositoriesResponse = await response.json()
+      setInstallations(data.installations)
+
+      console.log('[Repositories Page] Loaded repositories:', data.repositories.map(r => ({
+        id: r.id,
+        dbId: r.dbId,
+        name: r.name,
+      })))
+
+      setRepositories(data.repositories)
+
+      // Calculate stats
+      setStats({
+        total: data.repositories.length,
+        active: data.repositories.filter(r => r.isActive).length,
+        configured: data.repositories.filter(r => r.hasConfig).length,
+      })
+    } catch (err) {
+      console.error('Error fetching repositories:', err)
+      setError('Failed to load repositories. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
-  const checkAuthAndFetch = async () => {
+  const checkAuthAndFetch = useCallback(async () => {
     try {
       const response = await fetch('/api/auth/me')
       if (!response.ok) {
@@ -98,42 +130,11 @@ export default function RepositoriesPage() {
       console.error('Auth check failed:', err)
       router.push('/login')
     }
-  }
+  }, [fetchRepositories, router])
 
-  const fetchRepositories = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      const response = await fetch('/api/repositories')
-      if (!response.ok) {
-        throw new Error('Failed to fetch repositories')
-      }
-
-      const data: RepositoriesResponse = await response.json()
-      setInstallations(data.installations)
-
-      console.log('[Repositories Page] Loaded repositories:', data.repositories.map(r => ({
-        id: r.id,
-        dbId: r.dbId,
-        name: r.name,
-      })))
-
-      setRepositories(data.repositories)
-
-      // Calculate stats
-      setStats({
-        total: data.repositories.length,
-        active: data.repositories.filter(r => r.isActive).length,
-        configured: data.repositories.filter(r => r.hasConfig).length,
-      })
-    } catch (err) {
-      console.error('Error fetching repositories:', err)
-      setError('Failed to load repositories. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
+  useEffect(() => {
+    checkAuthAndFetch()
+  }, [checkAuthAndFetch])
 
   const syncInstallations = async () => {
     try {
@@ -388,7 +389,7 @@ export default function RepositoriesPage() {
                   1
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">点击上方"管理仓库权限"按钮</p>
+                  <p className="font-medium text-foreground">点击上方“管理仓库权限”按钮</p>
                   <p className="text-sm">会跳转到 GitHub App 安装页面</p>
                 </div>
               </div>
@@ -398,7 +399,7 @@ export default function RepositoriesPage() {
                 </div>
                 <div>
                   <p className="font-medium text-foreground">在 GitHub 上选择要授权的仓库</p>
-                  <p className="text-sm">可以选择"All repositories"或特定的仓库</p>
+                  <p className="text-sm">可以选择“All repositories”或特定的仓库</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -406,8 +407,8 @@ export default function RepositoriesPage() {
                   3
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">返回此页面并点击"刷新"</p>
-                  <p className="text-sm">新仓库会出现在列表中，点击"配置翻译"即可开始使用</p>
+                  <p className="font-medium text-foreground">返回此页面并点击“刷新”</p>
+                  <p className="text-sm">新仓库会出现在列表中，点击“配置翻译”即可开始使用</p>
                 </div>
               </div>
             </div>
@@ -416,8 +417,4 @@ export default function RepositoriesPage() {
       )}
     </ClientAppLayout>
   )
-}
-
-function cn(...classes: (string | boolean | undefined | null)[]) {
-  return classes.filter(Boolean).join(' ')
 }

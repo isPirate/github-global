@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import ClientAppLayout from '@/components/client-app-layout'
@@ -145,47 +145,7 @@ export default function TasksPage() {
     })
   }
 
-  useEffect(() => {
-    checkAuthAndFetch()
-  }, [page, filter, searchValue])
-
-  // Auto-refresh when there are processing tasks
-  useEffect(() => {
-    const hasProcessingTasks = tasks.some(task => task.status === 'processing')
-
-    if (!hasProcessingTasks) {
-      return
-    }
-
-    const interval = setInterval(() => {
-      fetchTasks()
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [tasks, page, filter])
-
-  const checkAuthAndFetch = async () => {
-    try {
-      const response = await fetch('/api/auth/me')
-      if (!response.ok) {
-        router.push('/login')
-        return
-      }
-
-      const authData = await response.json()
-      setUser({
-        username: authData.user.username,
-        avatarUrl: authData.user.avatarUrl,
-      })
-
-      await fetchTasks()
-    } catch (err) {
-      console.error('Auth check failed:', err)
-      router.push('/login')
-    }
-  }
-
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -217,7 +177,47 @@ export default function TasksPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filter, page, searchValue])
+
+  const checkAuthAndFetch = useCallback(async () => {
+    try {
+      const response = await fetch('/api/auth/me')
+      if (!response.ok) {
+        router.push('/login')
+        return
+      }
+
+      const authData = await response.json()
+      setUser({
+        username: authData.user.username,
+        avatarUrl: authData.user.avatarUrl,
+      })
+
+      await fetchTasks()
+    } catch (err) {
+      console.error('Auth check failed:', err)
+      router.push('/login')
+    }
+  }, [fetchTasks, router])
+
+  useEffect(() => {
+    checkAuthAndFetch()
+  }, [checkAuthAndFetch])
+
+  // Auto-refresh when there are processing tasks
+  useEffect(() => {
+    const hasProcessingTasks = tasks.some(task => task.status === 'processing')
+
+    if (!hasProcessingTasks) {
+      return
+    }
+
+    const interval = setInterval(() => {
+      fetchTasks()
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [fetchTasks, tasks])
 
   const handleRetryTask = async (taskId: string) => {
     try {

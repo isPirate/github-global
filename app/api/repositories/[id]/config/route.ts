@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/db/prisma'
+import { getEncryptionService } from '@/lib/crypto/encryption'
 
 // GET /api/repositories/[id]/config - Get translation configuration
 export async function GET(
@@ -159,7 +160,9 @@ export async function POST(
       },
     })
 
-    // Upsert translation engine (store API key encrypted - in production, use proper encryption)
+    const encryptionService = getEncryptionService()
+
+    // Upsert translation engine
     let translationEngine
 
     if (engine.id) {
@@ -168,7 +171,7 @@ export async function POST(
         where: { id: engine.id },
         data: {
           // Only update API key if provided
-          ...(engine.apiKey && { encryptedApiKey: engine.apiKey }),
+          ...(engine.apiKey && { encryptedApiKey: encryptionService.encrypt(engine.apiKey) }),
           config: engine.config || { model: 'openai/gpt-4-turbo', temperature: 0.3 },
           isActive: engine.isActive !== undefined ? engine.isActive : true,
         },
@@ -179,7 +182,7 @@ export async function POST(
         data: {
           repositoryId,
           engineType: engine.engineType || 'openrouter',
-          encryptedApiKey: engine.apiKey!, // Non-null assertion is safe here due to validation
+          encryptedApiKey: encryptionService.encrypt(engine.apiKey!), // Non-null assertion is safe here due to validation
           config: engine.config || { model: 'openai/gpt-4-turbo', temperature: 0.3 },
           isActive: engine.isActive !== undefined ? engine.isActive : true,
         },

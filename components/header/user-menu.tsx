@@ -1,9 +1,10 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Settings, LogOut, User, ChevronDown } from 'lucide-react'
+import { Settings, LogOut, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface UserMenuProps {
@@ -47,10 +48,12 @@ export function UserMenu({ user, className }: UserMenuProps) {
         aria-label="User menu"
       >
         {user.avatarUrl ? (
-          <img
+          <Image
             src={user.avatarUrl}
             alt={user.username}
-            className="w-8 h-8 rounded-full ring-2 ring-background hover:ring-muted transition-all"
+            width={32}
+            height={32}
+            className="h-8 w-8 rounded-full ring-2 ring-background hover:ring-muted transition-all"
           />
         ) : (
           <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-medium text-sm">

@@ -3,9 +3,48 @@ import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/db/prisma'
 import { translationQueue } from '@/lib/translation/queue'
 import { OpenRouterEngine } from '@/lib/translation/openrouter'
+import { getEncryptionService } from '@/lib/crypto/encryption'
 import { createAppAuth } from '@octokit/auth-app'
 import { Octokit } from 'octokit'
 import { createHash } from 'crypto'
+
+function looksLikePlaintextOpenRouterKey(value: string | null | undefined) {
+  return typeof value === 'string' && value.startsWith('sk-or-')
+}
+
+function looksLikeEncryptedValue(value: string | null | undefined) {
+  return typeof value === 'string' && /^[0-9a-f]+$/i.test(value) && value.length > 64
+}
+
+function resolveOpenRouterApiKey(repository: {
+  engines: Array<{ encryptedApiKey: string }>
+  user?: { settings?: { encryptedOpenRouterKey: string | null } | null } | null
+}) {
+  const repoKey = repository.engines[0]?.encryptedApiKey
+  const userKey = repository.user?.settings?.encryptedOpenRouterKey
+
+  if (looksLikePlaintextOpenRouterKey(repoKey)) {
+    return repoKey
+  }
+
+  if (looksLikeEncryptedValue(repoKey)) {
+    const encryptionService = getEncryptionService()
+    const decryptedRepoKey = encryptionService.decrypt(repoKey)
+    if (looksLikePlaintextOpenRouterKey(decryptedRepoKey)) {
+      return decryptedRepoKey
+    }
+  }
+
+  if (userKey) {
+    const encryptionService = getEncryptionService()
+    const decryptedUserKey = encryptionService.decrypt(userKey)
+    if (looksLikePlaintextOpenRouterKey(decryptedUserKey)) {
+      return decryptedUserKey
+    }
+  }
+
+  throw new Error('No valid OpenRouter API key found. Update the repository API key or configure a global OpenRouter API key in Settings.')
+}
 
 // POST /api/repositories/[id]/translate - Manually trigger translation
 export async function POST(
@@ -33,6 +72,11 @@ export async function POST(
           where: { isActive: true },
         },
         installation: true,
+        user: {
+          include: {
+            settings: true,
+          },
+        },
       },
     })
 
@@ -107,6 +151,11 @@ export async function processTranslationTask(taskId: string, repository: any) {
           where: { isActive: true },
         },
         installation: true,
+        user: {
+          include: {
+            settings: true,
+          },
+        },
       },
     })
 
@@ -230,7 +279,8 @@ export async function processTranslationTask(taskId: string, repository: any) {
 
     // Get translation engine
     const engineConfig = fullRepository.engines[0]
-    const engine = new OpenRouterEngine(engineConfig.encryptedApiKey, engineConfig.config)
+    const resolvedApiKey = resolveOpenRouterApiKey(fullRepository)
+    const engine = new OpenRouterEngine(resolvedApiKey, engineConfig.config)
 
     let processedFiles = 0
     let failedFiles = 0

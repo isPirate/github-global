@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useCallback, useEffect, useState, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import ClientAppLayout from '@/components/client-app-layout'
@@ -154,12 +154,7 @@ export default function RepositoryConfigPage() {
   const [apiKey, setApiKey] = useState('')
   const [selectedLanguages, setSelectedLanguages] = useState<string[]>([])
 
-  useEffect(() => {
-    fetchConfig()
-    fetchOpenRouterModels()
-  }, [repositoryId])
-
-  const fetchOpenRouterModels = async () => {
+  const fetchOpenRouterModels = useCallback(async () => {
     try {
       setModelsLoading(true)
       const response = await fetch('/api/openrouter/models')
@@ -172,7 +167,7 @@ export default function RepositoryConfigPage() {
     } finally {
       setModelsLoading(false)
     }
-  }
+  }, [])
 
   // Combine popular models with fetched models
   const availableModels = useMemo(() => {
@@ -213,7 +208,7 @@ export default function RepositoryConfigPage() {
     setShowCustomModelInput(!isInList && engine.config.model !== '')
   }, [engine.config.model, openRouterModels])
 
-  const fetchConfig = async () => {
+  const fetchConfig = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -254,7 +249,12 @@ export default function RepositoryConfigPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [repositoryId])
+
+  useEffect(() => {
+    fetchConfig()
+    fetchOpenRouterModels()
+  }, [fetchConfig, fetchOpenRouterModels])
 
   const handleSave = async () => {
     try {

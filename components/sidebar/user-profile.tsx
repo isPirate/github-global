@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -47,10 +48,12 @@ export function UserProfile({ username, avatarUrl, collapsed }: UserProfileProps
           title={username}
         >
           {avatarUrl ? (
-            <img
+            <Image
               src={avatarUrl}
               alt={username}
-              className="w-10 h-10 rounded-full"
+              width={40}
+              height={40}
+              className="h-10 w-10 rounded-full"
             />
           ) : (
             <span className="font-medium text-sm">{userInitial}</span>
@@ -105,10 +108,12 @@ export function UserProfile({ username, avatarUrl, collapsed }: UserProfileProps
         className="flex items-center gap-3 w-full px-3 py-2 rounded-md hover:bg-muted transition-colors"
       >
         {avatarUrl ? (
-          <img
+          <Image
             src={avatarUrl}
             alt={username}
-            className="w-9 h-9 rounded-full"
+            width={36}
+            height={36}
+            className="h-9 w-9 rounded-full"
           />
         ) : (
           <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center">

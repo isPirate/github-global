@@ -70,6 +70,12 @@ export class OpenRouterEngine {
         },
       }
     } catch (error) {
+      if (this.isInvalidApiKeyError(error)) {
+        throw new Error(
+          'OpenRouter API key rejected (401 User not found). Update the repository API key or configure a valid global OpenRouter API key in Settings.'
+        )
+      }
+
       // 如果配置了 fallback，自动降级
       if (this.config.fallbackModels && this.config.fallbackModels.length > 0) {
         return this.translateWithFallback(text, from, to, context, 0)
@@ -116,9 +122,22 @@ export class OpenRouterEngine {
         },
       }
     } catch (error) {
+      if (this.isInvalidApiKeyError(error)) {
+        throw new Error(
+          'OpenRouter API key rejected (401 User not found). Update the repository API key or configure a valid global OpenRouter API key in Settings.'
+        )
+      }
+
       // 尝试下一个 fallback
       return this.translateWithFallback(text, from, to, context, fallbackIndex + 1)
     }
+  }
+
+  private isInvalidApiKeyError(error: unknown): boolean {
+    const status = typeof error === 'object' && error !== null ? (error as { status?: number }).status : undefined
+    const message = error instanceof Error ? error.message : String(error)
+
+    return status === 401 || message.includes('401') || message.includes('User not found')
   }
 
   private buildSystemPrompt(from: string, to: string, context?: TranslationContext): string {

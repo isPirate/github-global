@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import type { User } from './settings-form'
 
 interface AccountSectionProps {
@@ -15,10 +16,12 @@ export default function AccountSection({ user }: AccountSectionProps) {
         {/* User Info */}
         <div className="flex items-center gap-4">
           {user.avatarUrl && (
-            <img
+            <Image
               src={user.avatarUrl}
               alt={user.username}
-              className="w-16 h-16 rounded-full"
+              width={64}
+              height={64}
+              className="h-16 w-16 rounded-full"
             />
           )}
           <div>

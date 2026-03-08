@@ -40,7 +40,6 @@ export async function GET(request: NextRequest) {
           repository: {
             name: {
               contains: search,
-              mode: 'insensitive',
             },
             userId: session.user.id,
           },
@@ -49,7 +48,6 @@ export async function GET(request: NextRequest) {
           repository: {
             fullName: {
               contains: search,
-              mode: 'insensitive',
             },
             userId: session.user.id,
           },
