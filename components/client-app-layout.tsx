@@ -1,9 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Sidebar } from '@/components/sidebar/sidebar'
 import { TopHeader } from '@/components/header/top-header'
 import { BottomNav } from '@/components/mobile-nav/bottom-nav'
+
+const DEFAULT_SIDEBAR_WIDTH = 304
+const MIN_SIDEBAR_WIDTH = 280
+const MAX_SIDEBAR_WIDTH = 420
 
 interface ClientAppLayoutProps {
   children: React.ReactNode
@@ -20,6 +24,32 @@ export default function ClientAppLayout({
   processingTaskCount = 0,
 }: ClientAppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH)
+
+  useEffect(() => {
+    const storedCollapsed = window.localStorage.getItem('app-sidebar-collapsed')
+    const storedWidth = window.localStorage.getItem('app-sidebar-width')
+
+    if (storedCollapsed === 'true') {
+      setSidebarCollapsed(true)
+    }
+
+    if (storedWidth) {
+      const parsed = Number(storedWidth)
+      if (!Number.isNaN(parsed)) {
+        setSidebarWidth(Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, parsed)))
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    window.localStorage.setItem('app-sidebar-collapsed', String(sidebarCollapsed))
+  }, [sidebarCollapsed])
+
+  useEffect(() => {
+    window.localStorage.setItem('app-sidebar-width', String(sidebarWidth))
+  }, [sidebarWidth])
 
   return (
     <div className="relative min-h-screen bg-background">
@@ -30,6 +60,10 @@ export default function ClientAppLayout({
           <Sidebar
             user={user}
             processingTaskCount={processingTaskCount}
+            collapsed={sidebarCollapsed}
+            width={sidebarWidth}
+            onToggleCollapse={() => setSidebarCollapsed((value) => !value)}
+            onWidthChange={setSidebarWidth}
             onNavigate={() => setSidebarOpen(false)}
           />
         </div>
@@ -47,6 +81,10 @@ export default function ClientAppLayout({
                 user={user}
                 processingTaskCount={processingTaskCount}
                 mobile
+                collapsed={false}
+                width={DEFAULT_SIDEBAR_WIDTH}
+                onToggleCollapse={() => undefined}
+                onWidthChange={() => undefined}
                 onNavigate={() => setSidebarOpen(false)}
               />
             </div>

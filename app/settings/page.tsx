@@ -10,7 +10,7 @@ export default async function SettingsPage() {
   const session = await getSession()
 
   if (!session) {
-    redirect('/login')
+    redirect('/api/auth/signin')
   }
 
   // Fetch or create user settings

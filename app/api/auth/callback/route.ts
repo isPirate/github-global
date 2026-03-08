@@ -17,13 +17,13 @@ export async function GET(request: NextRequest) {
   if (error) {
     console.error('GitHub OAuth error:', error, errorDescription)
     return NextResponse.redirect(
-      new URL(`/login?error=${error}&description=${encodeURIComponent(errorDescription || '')}`, request.url)
+      new URL(`/?error=${error}&description=${encodeURIComponent(errorDescription || '')}`, request.url)
     )
   }
 
   if (!code) {
     console.error('Missing authorization code')
-    return NextResponse.redirect(new URL('/login?error=missing_code', request.url))
+    return NextResponse.redirect(new URL('/?error=missing_code', request.url))
   }
 
   try {
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
     return NextResponse.redirect(
-      new URL(`/login?error=oauth_failed&message=${encodeURIComponent(errorMessage)}`, request.url)
+      new URL(`/?error=oauth_failed&message=${encodeURIComponent(errorMessage)}`, request.url)
     )
   }
 }

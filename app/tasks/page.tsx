@@ -1,7 +1,7 @@
 'use client'
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import ClientAppLayout from '@/components/client-app-layout'
 import { PageHeader } from '@/components/layout/page-header'
@@ -57,9 +57,8 @@ interface UserInfo {
   avatarUrl?: string | null
 }
 
-function TasksPageContent() {
+export default function TasksPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [tasks, setTasks] = useState<TranslationTask[]>([])
@@ -67,15 +66,11 @@ function TasksPageContent() {
   const [page, setPage] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<string>('all')
+  const [searchValue, setSearchValue] = useState('')
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set())
   const [user, setUser] = useState<UserInfo | null>(null)
-  const [searchValue, setSearchValue] = useState(searchParams.get('search') || '')
 
   const pageSize = 20
-
-  useEffect(() => {
-    setSearchValue(searchParams.get('search') || '')
-  }, [searchParams])
 
   const stats = useMemo(
     () => ({
@@ -113,8 +108,8 @@ function TasksPageContent() {
         params.append('status', filter)
       }
 
-      if (searchValue) {
-        params.append('search', searchValue)
+      if (searchValue.trim()) {
+        params.append('search', searchValue.trim())
       }
 
       const response = await fetch(`/api/tasks?${params.toString()}`)
@@ -137,7 +132,7 @@ function TasksPageContent() {
     try {
       const response = await fetch('/api/auth/me')
       if (!response.ok) {
-        router.push('/login')
+        router.push('/api/auth/signin')
         return
       }
 
@@ -150,7 +145,7 @@ function TasksPageContent() {
       await fetchTasks()
     } catch (err) {
       console.error('Auth check failed:', err)
-      router.push('/login')
+      router.push('/api/auth/signin')
     }
   }, [fetchTasks, router])
 
@@ -237,6 +232,11 @@ function TasksPageContent() {
 
         <TaskToolbar
           filter={filter}
+          searchValue={searchValue}
+          onSearchChange={(value) => {
+            setSearchValue(value)
+            setPage(0)
+          }}
           onFilterChange={(value) => {
             setFilter(value)
             setPage(0)
@@ -287,24 +287,5 @@ function TasksPageContent() {
         ) : null}
       </PageShell>
     </ClientAppLayout>
-  )
-}
-
-export default function TasksPage() {
-  return (
-    <Suspense
-      fallback={
-        <ClientAppLayout user={{ username: 'Loading...' }}>
-          <div className="flex h-64 items-center justify-center">
-            <div className="text-center">
-              <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-primary" />
-              <p className="mt-4 text-muted-foreground">正在加载任务...</p>
-            </div>
-          </div>
-        </ClientAppLayout>
-      }
-    >
-      <TasksPageContent />
-    </Suspense>
   )
 }

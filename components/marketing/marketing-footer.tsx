@@ -2,7 +2,7 @@ import Link from "next/link"
 import { Globe2 } from "lucide-react"
 
 const footerLinks = [
-  { label: "登录入口", href: "/login" },
+  { label: "GitHub 登录", href: "/api/auth/signin" },
   { label: "仓库管理", href: "/repositories" },
   { label: "任务追踪", href: "/tasks" },
   { label: "设置中心", href: "/settings" },

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FileText, Github, Globe } from 'lucide-react'
 import ClientAppLayout from '@/components/client-app-layout'
@@ -57,11 +57,32 @@ export default function RepositoriesPage() {
   const [installationUrl, setInstallationUrl] = useState<string | null>(null)
   const [syncing, setSyncing] = useState(false)
   const [user, setUser] = useState<UserInfo | null>(null)
+  const [searchValue, setSearchValue] = useState('')
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
     configured: 0,
   })
+
+  const filteredRepositories = useMemo(() => {
+    const keyword = searchValue.trim().toLowerCase()
+
+    if (!keyword) {
+      return repositories
+    }
+
+    return repositories.filter((repository) => {
+      const owner = repository.owner.login.toLowerCase()
+      const name = repository.name.toLowerCase()
+      const description = repository.description?.toLowerCase() || ''
+
+      return (
+        owner.includes(keyword) ||
+        name.includes(keyword) ||
+        description.includes(keyword)
+      )
+    })
+  }, [repositories, searchValue])
 
   const fetchRepositories = useCallback(async () => {
     try {
@@ -94,13 +115,13 @@ export default function RepositoriesPage() {
     try {
       const response = await fetch('/api/auth/me')
       if (!response.ok) {
-        router.push('/login')
+        router.push('/api/auth/signin')
         return
       }
 
       const authData = await response.json()
       if (!authData.user?.accessToken) {
-        router.push('/login?relogin=true')
+        router.push('/api/auth/signin')
         return
       }
 
@@ -122,7 +143,7 @@ export default function RepositoriesPage() {
       await fetchRepositories()
     } catch (err) {
       console.error('Auth check failed:', err)
-      router.push('/login')
+      router.push('/api/auth/signin')
     }
   }, [fetchRepositories, router])
 
@@ -232,6 +253,8 @@ export default function RepositoriesPage() {
         ) : (
           <PageShell>
             <RepositoryToolbar
+              searchValue={searchValue}
+              onSearchChange={setSearchValue}
               onRefresh={fetchRepositories}
               installationUrl={installationUrl}
             />
@@ -241,8 +264,12 @@ export default function RepositoriesPage() {
                 variant="empty"
                 installationUrl={installationUrl}
               />
+            ) : filteredRepositories.length === 0 ? (
+              <PageSection className="rounded-[var(--radius-xl)] border border-dashed border-border/70 bg-card/90 p-10 text-center text-sm text-muted-foreground">
+                没有匹配当前搜索词的仓库，请尝试调整关键词。
+              </PageSection>
             ) : (
-              <RepositoryGrid repositories={repositories} />
+              <RepositoryGrid repositories={filteredRepositories} />
             )}
 
             <PageSection surface className="p-6 md:p-8">

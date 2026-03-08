@@ -14,6 +14,8 @@ export default function SignOutButton() {
 
       if (response.redirected) {
         window.location.href = response.url
+      } else {
+        window.location.href = '/'
       }
     } catch (error) {
       console.error('Sign out error:', error)

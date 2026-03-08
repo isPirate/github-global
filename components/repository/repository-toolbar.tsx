@@ -1,16 +1,20 @@
-import { RefreshCw, Settings } from 'lucide-react'
+import { RefreshCw, Search, Settings } from 'lucide-react'
 
 interface RepositoryToolbarProps {
+  searchValue: string
+  onSearchChange: (value: string) => void
   onRefresh: () => void
   installationUrl: string | null
 }
 
 export function RepositoryToolbar({
+  searchValue,
+  onSearchChange,
   onRefresh,
   installationUrl,
 }: RepositoryToolbarProps) {
   return (
-    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="flex flex-col gap-4">
       <div>
         <h2 className="text-xl font-semibold">可用仓库</h2>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
@@ -18,26 +22,39 @@ export function RepositoryToolbar({
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={onRefresh}
-          className="inline-flex items-center gap-2 rounded-2xl border border-border/70 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-        >
-          <RefreshCw className="h-4 w-4" />
-          刷新仓库
-        </button>
-        {installationUrl ? (
-          <a
-            href={installationUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground"
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div className="relative w-full max-w-xl">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            value={searchValue}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder="搜索仓库名称、描述或所有者..."
+            className="h-12 w-full rounded-2xl border border-border/70 bg-background px-11 pr-4 text-sm outline-none transition focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={onRefresh}
+            className="inline-flex items-center gap-2 rounded-2xl border border-border/70 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            <Settings className="h-4 w-4" />
-            管理仓库权限
-          </a>
-        ) : null}
+            <RefreshCw className="h-4 w-4" />
+            刷新仓库
+          </button>
+          {installationUrl ? (
+            <a
+              href={installationUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-2xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground"
+            >
+              <Settings className="h-4 w-4" />
+              管理仓库权限
+            </a>
+          ) : null}
+        </div>
       </div>
     </div>
   )

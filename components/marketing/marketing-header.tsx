@@ -35,10 +35,10 @@ export function MarketingHeader() {
 
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" className="hidden sm:inline-flex">
-            <Link href="/login">查看控制台</Link>
+            <Link href="/dashboard">查看控制台</Link>
           </Button>
           <Button asChild className="gap-2">
-            <Link href="/login">
+            <Link href="/api/auth/signin">
               <Github className="h-4 w-4" />
               使用 GitHub 登录
               <ArrowRight className="h-4 w-4" />

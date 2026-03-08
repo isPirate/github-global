@@ -36,7 +36,7 @@ export function UserProfile({
   const handleSignOut = async () => {
     try {
       await fetch('/api/auth/signout', { method: 'POST' })
-      router.push('/login')
+      router.push('/')
     } catch (error) {
       console.error('Sign out error:', error)
     }

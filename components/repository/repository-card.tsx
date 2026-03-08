@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Github, Lock, Settings, Star } from 'lucide-react'
+import { ExternalLink, Github, Lock, Settings, Star } from 'lucide-react'
 import { StatusBadge } from '@/components/feedback/status-badge'
 import { QuickTranslateButton } from '@/components/repository/quick-translate-button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -67,7 +67,7 @@ export function RepositoryCard({ repository }: RepositoryCardProps) {
           </span>
         </div>
 
-        <div className="flex items-center gap-2 border-t border-border/70 pt-4">
+        <div className="grid grid-cols-3 gap-2 border-t border-border/70 pt-4">
           {repository.dbId ? (
             <>
               <QuickTranslateButton
@@ -76,16 +76,25 @@ export function RepositoryCard({ repository }: RepositoryCardProps) {
                 isActive={repository.isActive}
                 hasConfig={repository.hasConfig}
                 variant="compact"
+                className="w-full"
               />
               <Link
                 href={`/repositories/${repository.dbId}/config`}
-                className="ml-auto inline-flex items-center justify-center rounded-2xl border border-border/70 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                className="inline-flex items-center justify-center rounded-2xl border border-border/70 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
               >
                 <Settings className="h-4 w-4" />
               </Link>
+              <a
+                href={`https://github.com/${repository.owner.login}/${repository.name}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center rounded-2xl border border-border/70 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </a>
             </>
           ) : (
-            <span className="text-sm text-muted-foreground">同步中...</span>
+            <span className="col-span-3 text-sm text-muted-foreground">同步中...</span>
           )}
         </div>
       </CardContent>

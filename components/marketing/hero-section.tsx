@@ -43,7 +43,7 @@ export function HeroSection() {
 
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg" className="gap-2">
-              <Link href="/login">
+              <Link href="/api/auth/signin">
                 使用 GitHub 登录
                 <ArrowRight className="h-4 w-4" />
               </Link>

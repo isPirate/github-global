@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect } from 'react'
 import Link from 'next/link'
-import { BarChart3, ChevronLeft, FileText, Github, Globe2, PanelLeft, Settings } from 'lucide-react'
+import { BarChart3, ChevronLeft, FileText, Github, Globe2, GripVertical, PanelLeft, Settings } from 'lucide-react'
 import { NavItem } from './nav-item'
 import { UserProfile } from './user-profile'
 import { cn } from '@/lib/utils'
@@ -15,6 +15,10 @@ interface SidebarProps {
   processingTaskCount?: number
   className?: string
   mobile?: boolean
+  collapsed: boolean
+  width: number
+  onToggleCollapse: () => void
+  onWidthChange: (value: number) => void
   onNavigate?: () => void
 }
 
@@ -25,21 +29,61 @@ const navigationItems = [
   { title: '设置', href: '/settings', icon: Settings },
 ]
 
+const MIN_SIDEBAR_WIDTH = 280
+const MAX_SIDEBAR_WIDTH = 420
+
 export function Sidebar({
   user,
   processingTaskCount = 0,
   className,
   mobile = false,
+  collapsed,
+  width,
+  onToggleCollapse,
+  onWidthChange,
   onNavigate,
 }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false)
   const taskBadge = processingTaskCount > 0 ? processingTaskCount : undefined
+
+  useEffect(() => {
+    if (mobile) {
+      return
+    }
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const nextWidth = Math.max(
+        MIN_SIDEBAR_WIDTH,
+        Math.min(MAX_SIDEBAR_WIDTH, event.clientX)
+      )
+      onWidthChange(nextWidth)
+    }
+
+    const stopResize = () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', stopResize)
+    }
+
+    const startResize = () => {
+      window.addEventListener('mousemove', handleMouseMove)
+      window.addEventListener('mouseup', stopResize)
+    }
+
+    const handle = document.getElementById('app-sidebar-resize-handle')
+    handle?.addEventListener('mousedown', startResize)
+
+    return () => {
+      handle?.removeEventListener('mousedown', startResize)
+      stopResize()
+    }
+  }, [mobile, onWidthChange])
 
   return (
     <aside
+      style={{
+        width: mobile ? 'min(88vw, var(--sidebar-width))' : collapsed ? 'var(--sidebar-collapsed-width)' : `${width}px`,
+      }}
       className={cn(
-        'app-surface flex h-full w-[var(--sidebar-width)] flex-col border-r border-border/70 shadow-[var(--shadow-md)]',
-        collapsed && !mobile && 'w-[var(--sidebar-collapsed-width)]',
+        'app-surface relative flex h-full flex-col border-r border-border/70 shadow-[var(--shadow-md)] transition-[width] duration-200',
         className
       )}
     >
@@ -54,8 +98,8 @@ export function Sidebar({
           </div>
           {!collapsed || mobile ? (
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold tracking-[0.18em] text-primary">
-                GITHUB GLOBAL
+              <p className="truncate text-sm font-semibold tracking-[0.12em] text-primary">
+                GitHub Global
               </p>
               <p className="truncate text-xs text-muted-foreground">
                 Translation Console
@@ -67,7 +111,7 @@ export function Sidebar({
         {!mobile ? (
           <button
             type="button"
-            onClick={() => setCollapsed((value) => !value)}
+            onClick={onToggleCollapse}
             className="hidden rounded-xl border border-border/70 bg-background/80 p-2 text-muted-foreground transition-colors hover:text-foreground lg:inline-flex"
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
@@ -112,6 +156,17 @@ export function Sidebar({
           collapsed={collapsed && !mobile}
         />
       </div>
+
+      {!mobile && !collapsed ? (
+        <button
+          id="app-sidebar-resize-handle"
+          type="button"
+          aria-label="Resize sidebar"
+          className="absolute right-0 top-0 hidden h-full w-3 translate-x-1/2 cursor-col-resize items-center justify-center text-muted-foreground/70 lg:flex"
+        >
+          <GripVertical className="h-4 w-4 rounded-full bg-background/90 shadow-sm" />
+        </button>
+      ) : null}
     </aside>
   )
 }

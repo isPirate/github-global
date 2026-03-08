@@ -23,7 +23,7 @@ export function CtaSection() {
 
             <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
               <Button asChild size="lg" className="gap-2">
-                <Link href="/login">
+                <Link href="/api/auth/signin">
                   <Github className="h-4 w-4" />
                   进入控制台
                   <ArrowRight className="h-4 w-4" />

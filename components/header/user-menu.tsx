@@ -34,7 +34,7 @@ export function UserMenu({ user, className }: UserMenuProps) {
   const handleLogout = async () => {
     try {
       await fetch('/api/auth/signout', { method: 'POST' })
-      router.push('/login')
+      router.push('/')
     } catch (error) {
       console.error('Logout failed:', error)
     }

@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   const clientId = process.env.GITHUB_CLIENT_ID
-  const redirectUri = process.env.GITHUB_OAUTH_CALLBACK_URL
+  const redirectUri = new URL('/api/auth/callback', request.nextUrl.origin).toString()
   const state = Math.random().toString(36).substring(2, 15)
 
-  if (!clientId || !redirectUri) {
+  if (!clientId) {
     return NextResponse.json(
       { error: 'GitHub OAuth environment variables are not configured' },
       { status: 500 }
