@@ -1,6 +1,5 @@
-import { NextResponse } from 'next/server'
+﻿import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { getSession } from '@/lib/auth/session'
 
 const publicRoutes = new Set(['/', '/api/auth/signin', '/api/auth/callback'])
 const protectedRoutes = ['/dashboard', '/repositories', '/tasks', '/settings']
@@ -22,9 +21,9 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isProtectedRoute) {
-    const session = await getSession()
+    const sessionCookie = request.cookies.get('session')
 
-    if (!session) {
+    if (!sessionCookie?.value) {
       return NextResponse.redirect(new URL('/api/auth/signin', request.url))
     }
   }
