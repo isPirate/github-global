@@ -83,11 +83,11 @@ export function Sidebar({
         width: mobile ? 'min(88vw, var(--sidebar-width))' : collapsed ? 'var(--sidebar-collapsed-width)' : `${width}px`,
       }}
       className={cn(
-        'app-surface relative flex h-full flex-col border-r border-border/70 shadow-[var(--shadow-md)] transition-[width] duration-200',
+        'app-surface relative flex h-screen flex-col overflow-hidden border-r border-border/70 shadow-[var(--shadow-md)] transition-[width] duration-200',
         className
       )}
     >
-      <div className="flex h-[var(--header-height)] items-center justify-between gap-3 border-b border-border/70 px-4">
+      <div className="flex h-[var(--header-height)] shrink-0 items-center justify-between gap-3 border-b border-border/70 px-4">
         <Link
           href="/dashboard"
           className={cn('flex min-w-0 items-center gap-3', collapsed && !mobile && 'justify-center')}
@@ -124,7 +124,7 @@ export function Sidebar({
         ) : null}
       </div>
 
-      <div className="px-4 py-5">
+      <div className="shrink-0 px-4 py-5">
         {!collapsed || mobile ? (
           <div className="rounded-[var(--radius-lg)] border border-primary/15 bg-primary/[0.06] p-4">
             <p className="text-sm font-medium text-foreground">工作台入口</p>
@@ -135,7 +135,7 @@ export function Sidebar({
         ) : null}
       </div>
 
-      <nav className="flex-1 space-y-1 px-3 pb-6">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 pb-6">
         {navigationItems.map((item) => (
           <NavItem
             key={item.href}
@@ -149,7 +149,7 @@ export function Sidebar({
         ))}
       </nav>
 
-      <div className="border-t border-border/70 p-3">
+      <div className="shrink-0 border-t border-border/70 p-3">
         <UserProfile
           username={user.username}
           avatarUrl={user.avatarUrl}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import ClientAppLayout from '@/components/client-app-layout'
@@ -60,17 +60,30 @@ interface UserInfo {
 export default function TasksPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const [loading, setLoading] = useState(true)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [tasks, setTasks] = useState<TranslationTask[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [page, setPage] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [filter, setFilter] = useState<string>('all')
-  const [searchValue, setSearchValue] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set())
   const [user, setUser] = useState<UserInfo | null>(null)
+  const hasLoadedTasksRef = useRef(false)
 
   const pageSize = 20
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setSearchQuery(searchInput.trim())
+      setPage(0)
+    }, 250)
+
+    return () => window.clearTimeout(timer)
+  }, [searchInput])
 
   const stats = useMemo(
     () => ({
@@ -81,6 +94,8 @@ export default function TasksPage() {
     }),
     [tasks]
   )
+
+  const hasProcessingTasks = stats.processing > 0
 
   const toggleTaskExpansion = (taskId: string) => {
     setExpandedTasks((previous) => {
@@ -94,9 +109,15 @@ export default function TasksPage() {
     })
   }
 
-  const fetchTasks = useCallback(async () => {
+  const fetchTasks = useCallback(async (options?: { background?: boolean }) => {
+    const background = options?.background ?? hasLoadedTasksRef.current
+
     try {
-      setLoading(true)
+      if (background) {
+        setIsRefreshing(true)
+      } else {
+        setInitialLoading(true)
+      }
       setError(null)
 
       const params = new URLSearchParams({
@@ -108,8 +129,8 @@ export default function TasksPage() {
         params.append('status', filter)
       }
 
-      if (searchValue.trim()) {
-        params.append('search', searchValue.trim())
+      if (searchQuery) {
+        params.append('search', searchQuery)
       }
 
       const response = await fetch(`/api/tasks?${params.toString()}`)
@@ -120,15 +141,17 @@ export default function TasksPage() {
       const data: TasksResponse = await response.json()
       setTasks(data.tasks)
       setTotalCount(data.totalCount)
+      hasLoadedTasksRef.current = true
     } catch (err) {
       console.error('Error fetching tasks:', err)
       setError('加载任务失败，请稍后重试。')
     } finally {
-      setLoading(false)
+      setInitialLoading(false)
+      setIsRefreshing(false)
     }
-  }, [filter, page, searchValue])
+  }, [filter, page, searchQuery])
 
-  const checkAuthAndFetch = useCallback(async () => {
+  const bootstrapPage = useCallback(async () => {
     try {
       const response = await fetch('/api/auth/me')
       if (!response.ok) {
@@ -141,29 +164,37 @@ export default function TasksPage() {
         username: authData.user.username,
         avatarUrl: authData.user.avatarUrl,
       })
-
-      await fetchTasks()
     } catch (err) {
       console.error('Auth check failed:', err)
       router.push('/api/auth/signin')
+    } finally {
+      setAuthLoading(false)
     }
-  }, [fetchTasks, router])
+  }, [router])
 
   useEffect(() => {
-    checkAuthAndFetch()
-  }, [checkAuthAndFetch])
+    bootstrapPage()
+  }, [bootstrapPage])
 
   useEffect(() => {
-    if (!tasks.some((task) => task.status === 'processing')) {
+    if (!user) {
       return
     }
 
-    const interval = setInterval(() => {
-      fetchTasks()
+    fetchTasks({ background: hasLoadedTasksRef.current })
+  }, [fetchTasks, user])
+
+  useEffect(() => {
+    if (!hasProcessingTasks) {
+      return
+    }
+
+    const interval = window.setInterval(() => {
+      fetchTasks({ background: true })
     }, 5000)
 
-    return () => clearInterval(interval)
-  }, [fetchTasks, tasks])
+    return () => window.clearInterval(interval)
+  }, [fetchTasks, hasProcessingTasks])
 
   const handleRetryTask = async (taskId: string) => {
     try {
@@ -181,7 +212,7 @@ export default function TasksPage() {
         variant: 'success',
       })
 
-      await fetchTasks()
+      await fetchTasks({ background: true })
     } catch (err) {
       console.error('Error retrying task:', err)
       toast({
@@ -192,7 +223,7 @@ export default function TasksPage() {
     }
   }
 
-  if (loading && page === 0) {
+  if (authLoading || (initialLoading && !user)) {
     return (
       <ClientAppLayout user={{ username: 'Loading...' }}>
         <div className="flex h-64 items-center justify-center">
@@ -205,9 +236,13 @@ export default function TasksPage() {
     )
   }
 
+  if (!user) {
+    return null
+  }
+
   return (
     <ClientAppLayout
-      user={user || { username: 'User' }}
+      user={user}
       processingTaskCount={stats.processing}
     >
       <PageShell spacing="comfortable">
@@ -232,16 +267,14 @@ export default function TasksPage() {
 
         <TaskToolbar
           filter={filter}
-          searchValue={searchValue}
-          onSearchChange={(value) => {
-            setSearchValue(value)
-            setPage(0)
-          }}
+          searchValue={searchInput}
+          onSearchChange={setSearchInput}
           onFilterChange={(value) => {
             setFilter(value)
             setPage(0)
           }}
-          onRefresh={fetchTasks}
+          onRefresh={() => fetchTasks({ background: true })}
+          refreshing={isRefreshing}
         />
 
         <TaskList
@@ -257,7 +290,7 @@ export default function TasksPage() {
             <button
               type="button"
               onClick={() => setPage((previous) => Math.max(0, previous - 1))}
-              disabled={page === 0}
+              disabled={page === 0 || isRefreshing}
               className="rounded-2xl border border-border/70 px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
             >
               上一页
@@ -268,7 +301,7 @@ export default function TasksPage() {
             <button
               type="button"
               onClick={() => setPage((previous) => previous + 1)}
-              disabled={(page + 1) * pageSize >= totalCount}
+              disabled={isRefreshing || (page + 1) * pageSize >= totalCount}
               className="rounded-2xl border border-border/70 px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
             >
               下一页
@@ -276,12 +309,14 @@ export default function TasksPage() {
           </div>
         ) : null}
 
-        {tasks.some((task) => task.status === 'processing') ? (
+        {hasProcessingTasks ? (
           <div className="fixed bottom-24 right-6 z-40 flex items-center gap-3 rounded-[var(--radius-lg)] bg-blue-600 px-4 py-3 text-white shadow-[var(--shadow-md)] lg:bottom-8">
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <Loader2 className={isRefreshing ? 'h-5 w-5 animate-spin' : 'h-5 w-5'} />
             <div className="flex flex-col">
               <span className="text-sm font-medium">翻译任务进行中</span>
-              <span className="text-xs text-blue-100">状态会自动刷新</span>
+              <span className="text-xs text-blue-100">
+                {isRefreshing ? '正在静默刷新状态' : '状态会自动刷新'}
+              </span>
             </div>
           </div>
         ) : null}

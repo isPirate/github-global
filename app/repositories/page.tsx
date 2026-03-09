@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FileText, Github, Globe } from 'lucide-react'
 import ClientAppLayout from '@/components/client-app-layout'
@@ -50,7 +50,9 @@ interface UserInfo {
 export default function RepositoriesPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const [loading, setLoading] = useState(true)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [initialLoading, setInitialLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [repositories, setRepositories] = useState<Repository[]>([])
   const [installations, setInstallations] = useState<Installation[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -63,6 +65,7 @@ export default function RepositoriesPage() {
     active: 0,
     configured: 0,
   })
+  const hasLoadedRepositoriesRef = useRef(false)
 
   const filteredRepositories = useMemo(() => {
     const keyword = searchValue.trim().toLowerCase()
@@ -71,22 +74,18 @@ export default function RepositoriesPage() {
       return repositories
     }
 
-    return repositories.filter((repository) => {
-      const owner = repository.owner.login.toLowerCase()
-      const name = repository.name.toLowerCase()
-      const description = repository.description?.toLowerCase() || ''
-
-      return (
-        owner.includes(keyword) ||
-        name.includes(keyword) ||
-        description.includes(keyword)
-      )
-    })
+    return repositories.filter((repository) => repository.name.toLowerCase().includes(keyword))
   }, [repositories, searchValue])
 
-  const fetchRepositories = useCallback(async () => {
+  const fetchRepositories = useCallback(async (options?: { background?: boolean }) => {
+    const background = options?.background ?? hasLoadedRepositoriesRef.current
+
     try {
-      setLoading(true)
+      if (background) {
+        setIsRefreshing(true)
+      } else {
+        setInitialLoading(true)
+      }
       setError(null)
 
       const response = await fetch('/api/repositories')
@@ -100,18 +99,19 @@ export default function RepositoriesPage() {
       setStats({
         total: data.repositories.length,
         active: data.repositories.filter((repository) => repository.isActive).length,
-        configured: data.repositories.filter((repository) => repository.hasConfig)
-          .length,
+        configured: data.repositories.filter((repository) => repository.hasConfig).length,
       })
+      hasLoadedRepositoriesRef.current = true
     } catch (err) {
       console.error('Error fetching repositories:', err)
       setError('加载仓库失败，请稍后重试。')
     } finally {
-      setLoading(false)
+      setInitialLoading(false)
+      setIsRefreshing(false)
     }
   }, [])
 
-  const checkAuthAndFetch = useCallback(async () => {
+  const bootstrapPage = useCallback(async () => {
     try {
       const response = await fetch('/api/auth/me')
       if (!response.ok) {
@@ -139,17 +139,25 @@ export default function RepositoriesPage() {
       } catch (err) {
         console.error('Failed to get installation URL:', err)
       }
-
-      await fetchRepositories()
     } catch (err) {
       console.error('Auth check failed:', err)
       router.push('/api/auth/signin')
+    } finally {
+      setAuthLoading(false)
     }
-  }, [fetchRepositories, router])
+  }, [router])
 
   useEffect(() => {
-    checkAuthAndFetch()
-  }, [checkAuthAndFetch])
+    bootstrapPage()
+  }, [bootstrapPage])
+
+  useEffect(() => {
+    if (!user) {
+      return
+    }
+
+    fetchRepositories({ background: hasLoadedRepositoriesRef.current })
+  }, [fetchRepositories, user])
 
   const syncInstallations = async () => {
     try {
@@ -172,7 +180,7 @@ export default function RepositoriesPage() {
           description: `已同步 ${result.synced} 个仓库`,
           variant: 'success',
         })
-        await fetchRepositories()
+        await fetchRepositories({ background: true })
       } else {
         toast({
           title: '未找到仓库',
@@ -192,7 +200,7 @@ export default function RepositoriesPage() {
     }
   }
 
-  if (loading || !user) {
+  if (authLoading || initialLoading) {
     return (
       <ClientAppLayout user={{ username: 'Loading...' }}>
         <div className="flex h-64 items-center justify-center">
@@ -203,6 +211,10 @@ export default function RepositoriesPage() {
         </div>
       </ClientAppLayout>
     )
+  }
+
+  if (!user) {
+    return null
   }
 
   return (
@@ -255,8 +267,9 @@ export default function RepositoriesPage() {
             <RepositoryToolbar
               searchValue={searchValue}
               onSearchChange={setSearchValue}
-              onRefresh={fetchRepositories}
+              onRefresh={() => fetchRepositories({ background: true })}
               installationUrl={installationUrl}
+              refreshing={isRefreshing}
             />
 
             {repositories.length === 0 ? (
@@ -266,7 +279,7 @@ export default function RepositoriesPage() {
               />
             ) : filteredRepositories.length === 0 ? (
               <PageSection className="rounded-[var(--radius-xl)] border border-dashed border-border/70 bg-card/90 p-10 text-center text-sm text-muted-foreground">
-                没有匹配当前搜索词的仓库，请尝试调整关键词。
+                没有匹配当前仓库名称的结果，请尝试调整关键词。
               </PageSection>
             ) : (
               <RepositoryGrid repositories={filteredRepositories} />

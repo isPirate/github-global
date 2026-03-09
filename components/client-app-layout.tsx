@@ -55,8 +55,8 @@ export default function ClientAppLayout({
     <div className="relative min-h-screen bg-background">
       <div className="pointer-events-none fixed inset-x-0 top-0 z-0 h-80 bg-[radial-gradient(circle_at_top,rgba(22,163,74,0.12),transparent_50%)]" />
 
-      <div className="relative z-10 flex min-h-screen">
-        <div className="hidden lg:block">
+      <div className="relative z-10 flex min-h-screen lg:items-start">
+        <div className="hidden lg:sticky lg:top-0 lg:block lg:h-screen lg:shrink-0">
           <Sidebar
             user={user}
             processingTaskCount={processingTaskCount}

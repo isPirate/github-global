@@ -15,6 +15,7 @@ interface TaskToolbarProps {
   onSearchChange: (value: string) => void
   onFilterChange: (value: string) => void
   onRefresh: () => void
+  refreshing?: boolean
 }
 
 export function TaskToolbar({
@@ -23,6 +24,7 @@ export function TaskToolbar({
   onSearchChange,
   onFilterChange,
   onRefresh,
+  refreshing = false,
 }: TaskToolbarProps) {
   return (
     <div className="flex flex-col gap-4">
@@ -33,7 +35,7 @@ export function TaskToolbar({
             type="text"
             value={searchValue}
             onChange={(event) => onSearchChange(event.target.value)}
-            placeholder="搜索任务、仓库名称或文件语言..."
+            placeholder="按仓库名称搜索任务"
             className="h-12 w-full rounded-2xl border border-border/70 bg-background px-11 pr-4 text-sm outline-none transition focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
           />
         </div>
@@ -41,10 +43,11 @@ export function TaskToolbar({
         <button
           type="button"
           onClick={onRefresh}
-          className="inline-flex items-center gap-2 rounded-2xl border border-border/70 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+          disabled={refreshing}
+          className="inline-flex items-center gap-2 rounded-2xl border border-border/70 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <RefreshCw className="h-4 w-4" />
-          刷新任务
+          <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
+          {refreshing ? '刷新中...' : '刷新任务'}
         </button>
       </div>
 
