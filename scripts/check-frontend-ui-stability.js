@@ -14,8 +14,10 @@ function read(relativePath) {
 const clientAppLayout = read('components/client-app-layout.tsx')
 const sidebar = read('components/sidebar/sidebar.tsx')
 const repositoriesPage = read('app/repositories/page.tsx')
+const repositoriesClientPage = read('app/repositories/repositories-client-page.tsx')
 const repositoryToolbar = read('components/repository/repository-toolbar.tsx')
 const tasksPage = read('app/tasks/page.tsx')
+const tasksClientPage = read('app/tasks/tasks-client-page.tsx')
 const taskToolbar = read('components/tasks/task-toolbar.tsx')
 
 assert(
@@ -31,18 +33,18 @@ assert(
 )
 
 assert(
-  repositoriesPage.includes('initialLoading') && repositoriesPage.includes('isRefreshing'),
-  'Repositories page should separate initial loading from refresh state'
+  repositoriesPage.includes('getSession()') && repositoriesPage.includes('initialUser'),
+  'Repositories page should resolve the session on the server and pass the initial user into the client page'
 )
 
 assert(
-  repositoriesPage.includes('if (authLoading || initialLoading) {'),
-  'Repositories page should keep the loading screen until the first repository payload arrives'
+  repositoriesClientPage.includes('initialLoading') && repositoriesClientPage.includes('isRefreshing'),
+  'Repositories client page should separate initial loading from refresh state'
 )
 
 assert(
-  !repositoriesPage.includes("if (loading || !user)"),
-  'Repositories page should not replace the whole layout with Loading on every refresh'
+  !repositoriesClientPage.includes("username: 'Loading...'"),
+  'Repositories client page should not replace the user menu with a loading placeholder'
 )
 
 assert(
@@ -51,18 +53,23 @@ assert(
 )
 
 assert(
-  tasksPage.includes('searchInput') && tasksPage.includes('searchQuery') && tasksPage.includes('setTimeout'),
-  'Tasks page should debounce the search input before querying'
+  tasksPage.includes('getSession()') && tasksPage.includes('initialUser'),
+  'Tasks page should resolve the session on the server and pass the initial user into the client page'
 )
 
 assert(
-  tasksPage.includes('initialLoading') && tasksPage.includes('isRefreshing'),
-  'Tasks page should separate initial loading from silent refresh state'
+  tasksClientPage.includes('searchInput') && tasksClientPage.includes('searchQuery') && tasksClientPage.includes('setTimeout'),
+  'Tasks client page should debounce the search input before querying'
 )
 
 assert(
-  !tasksPage.includes('setLoading(true)'),
-  'Tasks page should avoid full-page loading resets during polling or search'
+  tasksClientPage.includes('initialLoading') && tasksClientPage.includes('isRefreshing'),
+  'Tasks client page should separate initial loading from silent refresh state'
+)
+
+assert(
+  !tasksClientPage.includes("username: 'Loading...'"),
+  'Tasks client page should not replace the user menu with a loading placeholder'
 )
 
 assert(
