@@ -1,8 +1,8 @@
-'use client'
+﻿'use client'
 
 import { useEffect } from 'react'
 import Link from 'next/link'
-import { BarChart3, ChevronLeft, FileText, Github, Globe2, GripVertical, PanelLeft, Settings } from 'lucide-react'
+import { BarChart3, ChevronLeft, ChevronRight, FileText, Github, Globe2, GripVertical, Settings } from 'lucide-react'
 import { NavItem } from './nav-item'
 import { UserProfile } from './user-profile'
 import { cn } from '@/lib/utils'
@@ -17,6 +17,7 @@ interface SidebarProps {
   mobile?: boolean
   collapsed: boolean
   width: number
+  hydrated?: boolean
   onToggleCollapse: () => void
   onWidthChange: (value: number) => void
   onNavigate?: () => void
@@ -39,6 +40,7 @@ export function Sidebar({
   mobile = false,
   collapsed,
   width,
+  hydrated = true,
   onToggleCollapse,
   onWidthChange,
   onNavigate,
@@ -51,10 +53,7 @@ export function Sidebar({
     }
 
     const handleMouseMove = (event: MouseEvent) => {
-      const nextWidth = Math.max(
-        MIN_SIDEBAR_WIDTH,
-        Math.min(MAX_SIDEBAR_WIDTH, event.clientX)
-      )
+      const nextWidth = Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, event.clientX))
       onWidthChange(nextWidth)
     }
 
@@ -83,7 +82,8 @@ export function Sidebar({
         width: mobile ? 'min(88vw, var(--sidebar-width))' : collapsed ? 'var(--sidebar-collapsed-width)' : `${width}px`,
       }}
       className={cn(
-        'app-surface relative flex h-screen flex-col overflow-hidden border-r border-border/70 shadow-[var(--shadow-md)] transition-[width] duration-200',
+        'app-surface relative flex h-screen flex-col overflow-visible border-r border-border/70 shadow-[var(--shadow-md)] transition-[width] duration-200',
+        !hydrated && 'transition-none',
         className
       )}
     >
@@ -107,22 +107,19 @@ export function Sidebar({
             </div>
           ) : null}
         </Link>
-
-        {!mobile ? (
-          <button
-            type="button"
-            onClick={onToggleCollapse}
-            className="hidden rounded-xl border border-border/70 bg-background/80 p-2 text-muted-foreground transition-colors hover:text-foreground lg:inline-flex"
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {collapsed ? (
-              <PanelLeft className="h-4 w-4" />
-            ) : (
-              <ChevronLeft className="h-4 w-4" />
-            )}
-          </button>
-        ) : null}
       </div>
+
+      <button
+        type="button"
+        onClick={onToggleCollapse}
+        className={cn(
+          'absolute right-0 top-5 z-[65] hidden h-10 w-10 translate-x-1/2 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground shadow-[var(--shadow-md)] transition-all hover:text-foreground lg:flex',
+          collapsed && 'top-6 h-11 w-11 bg-card'
+        )}
+        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
+        {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+      </button>
 
       <div className="shrink-0 px-4 py-5">
         {!collapsed || mobile ? (
@@ -149,7 +146,7 @@ export function Sidebar({
         ))}
       </nav>
 
-      <div className="shrink-0 border-t border-border/70 p-3">
+      <div className="relative z-[66] shrink-0 overflow-visible border-t border-border/70 p-3">
         <UserProfile
           username={user.username}
           avatarUrl={user.avatarUrl}

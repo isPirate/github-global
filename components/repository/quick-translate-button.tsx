@@ -1,8 +1,8 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Play, Loader2, AlertCircle } from 'lucide-react'
+import { AlertCircle, Loader2, Play } from 'lucide-react'
 import { useToast } from '@/components/toast/use-toast'
 import { cn } from '@/lib/utils'
 
@@ -42,7 +42,7 @@ export function QuickTranslateButton({
     if (!hasConfig) {
       toast({
         title: '未配置翻译',
-        description: '请先配置翻译设置',
+        description: '请先配置翻译设置后再触发手动翻译',
         variant: 'warning',
         action: {
           label: '前往配置',
@@ -68,7 +68,7 @@ export function QuickTranslateButton({
 
       toast({
         title: '翻译任务已创建',
-        description: `仓库 "${repositoryName}" 的翻译已开始`,
+        description: `仓库 "${repositoryName}" 的翻译已开始，任务 ID: ${data.taskId}`,
         variant: 'success',
         action: {
           label: '查看进度',
@@ -91,36 +91,24 @@ export function QuickTranslateButton({
     }
   }
 
+  const baseClasses =
+    variant === 'compact'
+      ? 'min-h-11 rounded-xl px-4 py-2.5 text-sm'
+      : 'min-h-12 rounded-2xl px-5 py-3 text-sm'
+
   if (!isActive) {
     return (
       <button
         disabled
         className={cn(
-          'inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors',
-          'bg-muted text-muted-foreground cursor-not-allowed',
-          variant === 'compact' ? 'px-3 py-1.5' : 'px-4 py-2',
+          'inline-flex items-center justify-center gap-2 border font-medium transition-all',
+          'cursor-not-allowed border-border/70 bg-muted/70 text-muted-foreground',
+          baseClasses,
           className
         )}
       >
-        <AlertCircle className="w-4 h-4" />
-        仓库未启用
-      </button>
-    )
-  }
-
-  if (!hasConfig) {
-    return (
-      <button
-        onClick={() => router.push(`/repositories/${repositoryId}/config`)}
-        className={cn(
-          'inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors',
-          'bg-primary/10 text-primary hover:bg-primary/20',
-          variant === 'compact' ? 'px-3 py-1.5' : 'px-4 py-2',
-          className
-        )}
-      >
-        <AlertCircle className="w-4 h-4" />
-        配置翻译
+        <AlertCircle className="h-4 w-4" />
+        翻译不可用
       </button>
     )
   }
@@ -130,25 +118,28 @@ export function QuickTranslateButton({
       onClick={handleTranslate}
       disabled={loading}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors',
-        'bg-primary text-primary-foreground hover:bg-primary/90',
+        'inline-flex items-center justify-center gap-2 border font-medium transition-all duration-200',
         'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
-        'disabled:opacity-50 disabled:cursor-not-allowed',
-        variant === 'compact' ? 'px-3 py-1.5' : 'px-4 py-2',
+        'disabled:cursor-not-allowed disabled:opacity-50',
+        hasConfig
+          ? 'border-primary bg-primary text-primary-foreground shadow-[0_10px_30px_rgba(22,163,74,0.18)] hover:-translate-y-0.5 hover:bg-primary/92'
+          : 'border-primary/20 bg-primary/[0.08] text-primary hover:border-primary/35 hover:bg-primary/[0.14]',
+        baseClasses,
         className
       )}
     >
       {loading ? (
         <>
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <Loader2 className="h-4 w-4 animate-spin" />
           启动中...
         </>
       ) : (
         <>
-          <Play className="w-4 h-4" />
+          <Play className="h-4 w-4" />
           立即翻译
         </>
       )}
     </button>
   )
 }
+

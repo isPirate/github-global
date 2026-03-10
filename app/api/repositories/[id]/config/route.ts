@@ -1,10 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/db/prisma'
 import { getEncryptionService } from '@/lib/crypto/encryption'
 
 type RouteContext = {
   params: Promise<{ id: string }>
+}
+
+function sanitizeTargetLanguages(baseLanguage: string | undefined, languages: string[]) {
+  return Array.from(new Set(languages.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter((item) => item && item !== (baseLanguage || 'auto'))))
 }
 
 // GET /api/repositories/[id]/config - Get translation configuration
@@ -114,6 +118,15 @@ export async function POST(
       )
     }
 
+    const sanitizedTargetLanguages = sanitizeTargetLanguages(baseLanguage, targetLanguages)
+
+    if (sanitizedTargetLanguages.length === 0) {
+      return NextResponse.json(
+        { error: 'targetLanguages must contain at least one language different from baseLanguage' },
+        { status: 400 }
+      )
+    }
+
     if (!filePatterns || !Array.isArray(filePatterns) || filePatterns.length === 0) {
       return NextResponse.json(
         { error: 'filePatterns is required and must be a non-empty array' },
@@ -144,7 +157,7 @@ export async function POST(
       create: {
         repositoryId,
         baseLanguage: baseLanguage || 'auto',
-        targetLanguages,
+        targetLanguages: sanitizedTargetLanguages,
         filePatterns,
         excludePatterns: excludePatterns || [],
         targetBranchTemplate: targetBranchTemplate || 'i18n/{lang}',
@@ -154,7 +167,7 @@ export async function POST(
       },
       update: {
         baseLanguage: baseLanguage || 'auto',
-        targetLanguages,
+        targetLanguages: sanitizedTargetLanguages,
         filePatterns,
         excludePatterns: excludePatterns || [],
         targetBranchTemplate: targetBranchTemplate || 'i18n/{lang}',
@@ -211,3 +224,4 @@ export async function POST(
     )
   }
 }
+

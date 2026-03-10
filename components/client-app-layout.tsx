@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import { Sidebar } from '@/components/sidebar/sidebar'
@@ -9,6 +9,10 @@ const DEFAULT_SIDEBAR_WIDTH = 304
 const MIN_SIDEBAR_WIDTH = 280
 const MAX_SIDEBAR_WIDTH = 420
 
+let cachedSidebarCollapsed = false
+let cachedSidebarWidth = DEFAULT_SIDEBAR_WIDTH
+let cachedSidebarInitialized = false
+
 interface ClientAppLayoutProps {
   children: React.ReactNode
   user: {
@@ -18,38 +22,78 @@ interface ClientAppLayoutProps {
   processingTaskCount?: number
 }
 
+function getInitialSidebarPrefs() {
+  if (cachedSidebarInitialized) {
+    return {
+      collapsed: cachedSidebarCollapsed,
+      width: cachedSidebarWidth,
+    }
+  }
+
+  return {
+    collapsed: false,
+    width: DEFAULT_SIDEBAR_WIDTH,
+  }
+}
+
 export default function ClientAppLayout({
   children,
   user,
   processingTaskCount = 0,
 }: ClientAppLayoutProps) {
+  const initialPrefs = getInitialSidebarPrefs()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH)
+  const [sidebarHydrated, setSidebarHydrated] = useState(cachedSidebarInitialized)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(initialPrefs.collapsed)
+  const [sidebarWidth, setSidebarWidth] = useState(initialPrefs.width)
 
   useEffect(() => {
+    if (cachedSidebarInitialized) {
+      setSidebarHydrated(true)
+      return
+    }
+
     const storedCollapsed = window.localStorage.getItem('app-sidebar-collapsed')
     const storedWidth = window.localStorage.getItem('app-sidebar-width')
 
-    if (storedCollapsed === 'true') {
-      setSidebarCollapsed(true)
-    }
+    const nextCollapsed = storedCollapsed === 'true'
+    let nextWidth = DEFAULT_SIDEBAR_WIDTH
 
     if (storedWidth) {
       const parsed = Number(storedWidth)
       if (!Number.isNaN(parsed)) {
-        setSidebarWidth(Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, parsed)))
+        nextWidth = Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, parsed))
       }
     }
+
+    cachedSidebarCollapsed = nextCollapsed
+    cachedSidebarWidth = nextWidth
+    cachedSidebarInitialized = true
+
+    setSidebarCollapsed(nextCollapsed)
+    setSidebarWidth(nextWidth)
+    setSidebarHydrated(true)
   }, [])
 
   useEffect(() => {
+    if (!sidebarHydrated) {
+      return
+    }
+
+    cachedSidebarCollapsed = sidebarCollapsed
+    cachedSidebarInitialized = true
     window.localStorage.setItem('app-sidebar-collapsed', String(sidebarCollapsed))
-  }, [sidebarCollapsed])
+  }, [sidebarCollapsed, sidebarHydrated])
 
   useEffect(() => {
+    if (!sidebarHydrated) {
+      return
+    }
+
+    cachedSidebarWidth = sidebarWidth
+    cachedSidebarInitialized = true
     window.localStorage.setItem('app-sidebar-width', String(sidebarWidth))
-  }, [sidebarWidth])
+  }, [sidebarWidth, sidebarHydrated])
 
   return (
     <div className="relative min-h-screen bg-background">
@@ -62,6 +106,7 @@ export default function ClientAppLayout({
             processingTaskCount={processingTaskCount}
             collapsed={sidebarCollapsed}
             width={sidebarWidth}
+            hydrated={sidebarHydrated}
             onToggleCollapse={() => setSidebarCollapsed((value) => !value)}
             onWidthChange={setSidebarWidth}
             onNavigate={() => setSidebarOpen(false)}

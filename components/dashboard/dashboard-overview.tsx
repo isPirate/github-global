@@ -1,4 +1,4 @@
-import { BarChart3, CheckCircle2, FolderGit2, LoaderCircle } from 'lucide-react'
+﻿import { BarChart3, CheckCircle2, FolderGit2, LoaderCircle } from 'lucide-react'
 import { StatCard } from '@/components/metrics/stat-card'
 
 interface DashboardOverviewProps {

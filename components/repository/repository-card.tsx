@@ -1,4 +1,4 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 import { ExternalLink, Github, Lock, Settings, Star } from 'lucide-react'
 import { StatusBadge } from '@/components/feedback/status-badge'
 import { QuickTranslateButton } from '@/components/repository/quick-translate-button'
@@ -25,8 +25,8 @@ interface RepositoryCardProps {
 
 export function RepositoryCard({ repository }: RepositoryCardProps) {
   return (
-    <Card className="rounded-[var(--radius-xl)] border-border/70 bg-card/90 transition-transform duration-200 hover:-translate-y-1 hover:shadow-[var(--shadow-md)]">
-      <CardContent className="space-y-5 p-5">
+    <Card className="h-full rounded-[var(--radius-xl)] border-border/70 bg-card/90 transition-transform duration-200 hover:-translate-y-1 hover:shadow-[var(--shadow-md)]">
+      <CardContent className="flex h-full flex-col space-y-5 p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1 space-y-2">
             <div className="flex items-center gap-2">
@@ -36,12 +36,12 @@ export function RepositoryCard({ repository }: RepositoryCardProps) {
               ) : null}
             </div>
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Github className="h-4 w-4" />
-              {repository.owner.login}/{repository.name}
+              <Github className="h-4 w-4 shrink-0" />
+              <span className="truncate">{repository.owner.login}/{repository.name}</span>
             </p>
           </div>
           {repository.language ? (
-            <span className="rounded-full bg-info-soft px-2.5 py-1 text-xs font-medium text-sky-700 dark:text-sky-200">
+            <span className="shrink-0 rounded-full bg-info-soft px-2.5 py-1 text-xs font-medium text-sky-700 dark:text-sky-200">
               {repository.language}
             </span>
           ) : null}
@@ -67,7 +67,7 @@ export function RepositoryCard({ repository }: RepositoryCardProps) {
           </span>
         </div>
 
-        <div className="grid grid-cols-3 gap-2 border-t border-border/70 pt-4">
+        <div className="mt-auto grid grid-cols-[minmax(0,1fr)_48px_48px] gap-2 border-t border-border/70 pt-4">
           {repository.dbId ? (
             <>
               <QuickTranslateButton
@@ -80,7 +80,8 @@ export function RepositoryCard({ repository }: RepositoryCardProps) {
               />
               <Link
                 href={`/repositories/${repository.dbId}/config`}
-                className="inline-flex items-center justify-center rounded-2xl border border-border/70 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-border/70 bg-background/85 text-foreground transition-all hover:-translate-y-0.5 hover:bg-accent"
+                aria-label={`Configure ${repository.name}`}
               >
                 <Settings className="h-4 w-4" />
               </Link>
@@ -88,7 +89,8 @@ export function RepositoryCard({ repository }: RepositoryCardProps) {
                 href={`https://github.com/${repository.owner.login}/${repository.name}`}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center justify-center rounded-2xl border border-border/70 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-border/70 bg-background/85 text-foreground transition-all hover:-translate-y-0.5 hover:bg-accent"
+                aria-label={`Open ${repository.name} on GitHub`}
               >
                 <ExternalLink className="h-4 w-4" />
               </a>

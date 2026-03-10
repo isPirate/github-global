@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation'
+﻿import { redirect } from 'next/navigation'
 import AppLayout from '@/components/app-layout'
 import { DashboardOverview } from '@/components/dashboard/dashboard-overview'
 import { QuickActionsPanel } from '@/components/dashboard/quick-actions-panel'
@@ -140,3 +140,4 @@ export default async function DashboardPage() {
     </AppLayout>
   )
 }
+

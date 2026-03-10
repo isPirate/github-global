@@ -1,4 +1,4 @@
-import { RepositoryCard } from '@/components/repository/repository-card'
+﻿import { RepositoryCard } from '@/components/repository/repository-card'
 
 interface RepositoryGridProps {
   repositories: Array<{
@@ -21,7 +21,7 @@ interface RepositoryGridProps {
 
 export function RepositoryGrid({ repositories }: RepositoryGridProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
       {repositories.map((repository) => (
         <RepositoryCard key={repository.id} repository={repository} />
       ))}
