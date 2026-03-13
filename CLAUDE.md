@@ -1,269 +1,185 @@
-# Claude AI 项目指引
+﻿# Claude AI 项目指引
 
 ## 项目概述
-GitHub Global - GitHub 仓库自动化翻译平台，使用 AI 将仓库文档翻译成多语言并自动创建 PR。
+GitHub Global 是一个 GitHub 仓库自动化翻译平台，使用 AI 将仓库文档翻译成多语言，并自动创建分支和 Pull Request。
+
+当前项目已完成一轮前端重构，重点页面已经统一到同一套 app shell 和视觉体系中。当前开发阶段以 Bug 修复、稳定性优化和交互细节打磨为主。
+
+## 当前产品形态
+- `/`：营销首页，直接引导 GitHub OAuth 登录
+- `/dashboard`：总览页
+- `/repositories`：仓库列表、同步、配置入口、快速翻译
+- `/repositories/[id]/config`：仓库翻译配置页
+- `/tasks`：任务列表、筛选、搜索、失败重试
+- `/settings`：账户、GitHub App、OpenRouter Key、偏好设置
+
+> 当前正常登录路径不再经过 `/login`。
+> 首页 CTA 和受保护页面未登录跳转都直接进入 `/api/auth/signin`。
 
 ## 技术栈
-- Next.js 15 (App Router) + TypeScript
+- Next.js 15（App Router）+ TypeScript
+- React 19
+- Tailwind CSS + shadcn/ui
 - MySQL + Prisma ORM
-- GitHub App (JWT 认证) + GitHub OAuth (用户登录)
-- OpenRouter API (翻译引擎)
-- Tailwind CSS
+- GitHub OAuth（用户登录）
+- GitHub App（仓库访问、Webhook、PR 操作）
+- OpenRouter（翻译模型网关）
+- p-queue（翻译任务队列）
 
 ## 核心架构
 
 ### 认证系统（双认证）
-- **GitHub OAuth**: 用户登录 (`lib/auth/session.ts`)
-- **GitHub App**: 仓库操作，使用 JWT (`lib/github/app.ts`)
+- GitHub OAuth：用户登录，核心在 `lib/auth/session.ts`
+- GitHub App：仓库读写、Webhook、PR 操作
 
-### 数据模型（10个核心表）
-```
-User → UserSettings (用户偏好)
-  ↓
-GitHubAppInstallation → Repository
-  ↓                      ↓
-TranslationConfig          TranslationTask
-  ↓                              ↓
-TranslationEngine        TranslationFile
-                                ↓
-                          TranslationHistory
+### 数据模型（10 个核心表）
+```text
+User -> UserSettings
+  |
+  v
+GitHubAppInstallation -> Repository -> TranslationConfig
+                                     -> TranslationEngine
+                                     -> TranslationTask -> TranslationFile
+                                                        -> TranslationHistory
+WebhookEvent
 ```
 
 ### 关键目录
-```
-lib/
-├── auth/session.ts          # 会话管理
-├── github/
-│   ├── app.ts              # GitHub App JWT 客户端
-│   └── client.ts           # OAuth API 客户端
-├── translation/
-│   ├── openrouter.ts       # 翻译引擎（支持模型降级）
-│   ├── queue.ts            # p-queue 并发控制
-│   └── markdown.ts         # Markdown 处理
-└── crypto/encryption.ts     # API 密钥加密
+```text
+app/
+  api/                         Route Handlers
+  dashboard/                   总览页
+  repositories/                仓库页面
+  tasks/                       任务页面
+  settings/                    设置页面
+  page.tsx                     营销首页
 
-app/api/
-├── auth/                    # OAuth 认证
-├── github-app/              # App 安装/同步
-├── repositories/[id]/       # 仓库配置/翻译触发
-├── tasks/                   # 翻译任务查询
-└── webhooks/github/         # push 事件触发翻译
+components/
+  app-shell/                   顶部动作区、用户菜单等共享壳层组件
+  dashboard/                   Dashboard 组件
+  repository/                  仓库页组件
+  tasks/                       任务页组件
+  marketing/                   首页组件
+  layout/                      PageShell、PageHeader 等页面骨架组件
+  sidebar/                     侧边栏与用户信息
+
+lib/
+  auth/                        Session 管理
+  crypto/                      密钥加密
+  db/                          Prisma 客户端
+  github/                      GitHub API 封装
+  translation/                 翻译、队列、Markdown 处理
+
+prisma/
+  schema.prisma
+
+docs/
+  项目说明、设计方案、状态记录、接口文档
 ```
 
 ## 翻译工作流
-1. 用户在仓库配置页设置目标语言
-2. 触发方式：手动点击 OR Webhook (push 事件)
-3. 队列处理：`p-queue` 并发控制
-4. 文件发现：glob 模式匹配 + 内容哈希去重
-5. 翻译：OpenRouter 多模型自动降级
-6. 创建分支：`translate/{lang}` 分支
-7. 创建 PR：自动提交到目标仓库
+1. 用户在仓库配置页设置基准语言、目标语言、文件匹配规则和翻译引擎。
+2. 触发方式支持手动触发，部分设计已为 Webhook / 自动触发预留。
+3. 创建 `translationTask` 任务记录并压入 `p-queue`。
+4. 发现匹配文件，做内容哈希去重。
+5. 调用 OpenRouter 模型翻译 Markdown。
+6. 生成目标分支并写入翻译结果。
+7. 自动创建 PR，并把执行结果写入任务和文件历史。
+
+## 当前开发重点
+- 修复 UI 重构后的边界 Bug
+- 提高页面刷新、轮询、搜索、表单回填的稳定性
+- 优化 app shell、侧边栏、顶部操作区的一致性
+- 继续收敛仓库配置页的大型客户端逻辑
 
 ## 重要约定
-- GitHub App ID: `2890267`
-- 数据库: MySQL `github_global`
-- 环境变量: `.env.local`（已配置）
-- Webhook 需验证签名
-- API 密钥必须加密存储
-- **Git 操作规则**：
-  - ❌ 禁止自动执行 Git 操作（提交、推送、拉取等）
-  - ✅ 只能在用户明确要求时才能执行 Git 操作
-  - ✅ 用户需要明确说"进行 git 提交"或"提交代码"等指令
-  - ✅ 修改代码后可以询问用户是否需要提交，但不能自动执行
-- **数据库变更规则**：
-  - ❌ 禁止使用 `npx prisma db push` 修改数据库结构
-  - ✅ 必须使用 `npx prisma migrate dev --name <migration_name>` 生成 migration 文件
-  - ✅ 所有数据库变更必须有对应的 `migration.sql` 文件记录
-  - ✅ migration 文件必须提交到 Git 仓库
-  - ⚠️ 如果遇到 "Drift detected" 错误（数据库和 migration 历史不同步），需要：
-    1. 不要选择重置数据库（会丢失数据）
-    2. 手动创建 migration 目录和 SQL 文件
-    3. 使用 `npx prisma migrate resolve --applied <migration_name>` 标记为已应用
+- GitHub App ID：`2890267`
+- 数据库：MySQL `github_global`
+- 本地开发统一使用 `http://localhost:3000`
+- Webhook 必须验证签名
+- OpenRouter API Key 必须加密存储
 
-## 开发提示
-- 修改 API 端点：`app/api/**/*.ts`
-- 修改页面：`app/**/page.tsx`
-- 数据库变更：修改 `prisma/schema.prisma` 后运行 `npx prisma migrate dev --name <name>`
-- 查看数据库：`npx prisma studio`
+### Git 操作规则
+- 禁止自动执行 Git 提交、推送、拉取等操作
+- 只有在用户明确要求时才能执行 Git 操作
+- 修改代码后可以询问是否需要提交，但不能自动提交
 
-## 按需阅读的文档（节省上下文）
-
-### 必读（新会话开始时）
-1. `CLAUDE.md` (本文件) - 项目快速概览
-2. `PROJECT_STATUS.md` - 当前进度和已完成功能
-3. `prisma/schema.prisma` - 数据模型（10个核心表）
-
-### 按任务类型阅读
-
-**添加/修改功能时：**
-- `docs/技术实现方案文档.md` - 完整的技术设计、API 设计、模块接口
-
-**理解业务逻辑时：**
-- `docs/需求规格文档.md` - 产品需求、业务流程、用户场景
-
-**修改数据库时：**
-- `prisma/schema.prisma` - 数据模型定义
-- `docs/技术实现方案文档.md` 第3章 - 数据库设计详解
-
-**集成 GitHub 功能时：**
-- `docs/技术实现方案文档.md` 第4.2-4.3章 - GitHub App 和 API 模块设计
-
-**修改翻译功能时：**
-- `docs/技术实现方案文档.md` 第4.4章 - 翻译引擎和 Markdown 处理
-- `lib/translation/` 目录下的实现
-
-**处理 Webhook 时：**
-- `docs/技术实现方案文档.md` 第4.5章 - Webhook 模块设计
-
-### 不需要阅读（给人读的配置）
-- `docs/GitHub-App配置指南.md` - GitHub App 配置步骤
-- `docs/OpenRouter-API配置指南.md` - OpenRouter API 配置
-- `README.md` - 快速开始（与技术实现文档重复）
+### 数据库变更规则
+- 禁止使用 `npx prisma db push` 修改正式开发结构
+- 必须使用 `npx prisma migrate dev --name <migration_name>` 生成 migration
+- 所有数据库变更都必须有对应的 migration 文件
+- 如果出现 `Drift detected`：
+  1. 不要重置数据库
+  2. 手动创建 migration 文件
+  3. 使用 `npx prisma migrate resolve --applied <migration_name>` 标记状态
 
 ## 常用命令
 ```bash
-npm run dev                        # 开发服务器
-npx prisma migrate dev             # 创建并应用 migration（推荐）
-npx prisma migrate dev --name xxx  # 创建指定名称的 migration
-npx prisma migrate resolve --applied <name>  # 标记 migration 为已应用
-npx prisma studio                  # 数据库管理界面
-npx prisma generate                # 生成 Prisma Client
+npm run dev
+npm run build
+npm run lint
+npm run db:generate
+npm run db:migrate
+npm run db:studio
+npx prisma migrate dev --name <name>
+npx prisma migrate resolve --applied <name>
 ```
 
-## 可用的 MCP 工具（请主动使用）
+## 新会话建议先读
+1. `CLAUDE.md`
+2. `PROJECT_STATUS.md`
+3. `prisma/schema.prisma`
 
-### 📚 Context7 - 技术文档查询
-**用途**：获取最新的库/框架文档和代码示例
+## 按任务类型阅读
 
-**何时主动使用**：
-- 用户询问 "如何使用 X 库" 时
-- 需要查看某个库的最新 API 文档时
-- 不确定某个库的用法时
-- 添加新功能需要参考文档时
+### 恢复项目上下文
+- `PROJECT_STATUS.md`：当前进度、最近稳定性修复、页面结构
+- `docs/API接口文档.md`：当前所有接口、鉴权方式、请求参数、返回结构
+- `docs/2026-03-08-structure-review-and-lint-fix-change-log.md`：前一轮结构梳理和 lint 修复背景
 
-**示例场景**：
-```
-用户: "用 Zustand 替换 Redux"
-AI 应该: 主动调用 Context7 查询 Zustand 最新文档
-```
+### 添加或修改功能
+- `docs/技术实现方案文档.md`：技术设计、模块边界、核心 API 方案
+- `docs/需求规格文档.md`：产品需求、业务流程、用户场景
 
-**不要等用户说**："去查一下 Zustand 文档"
+### 修改 API 或排查前后端联调
+- `docs/API接口文档.md`
+- `app/api/**/route.ts`
+- 相关页面下的 client page 和调用组件
 
-### 🌐 Chrome DevTools - 浏览器自动化
-**用途**：控制浏览器、调试前端、截图、分析性能
+### 修改数据库
+- `prisma/schema.prisma`
+- `docs/技术实现方案文档.md` 中的数据库设计章节
 
-**何时主动使用**：
-- 用户说 "页面有问题" 时 → 主动打开页面截图
-- 用户说 "样式不对" 时 → 主动检查元素
-- 用户说 "点击按钮没反应" 时 → 主动测试交互
-- 需要验证前端功能时
+### 修改翻译功能
+- `lib/translation/`
+- `app/api/repositories/[id]/translate/route.ts`
+- `app/api/tasks/[id]/route.ts`
 
-**示例场景**：
-```
-用户: "登录按钮点不了"
-AI 应该:
-1. 打开 http://localhost:3000/login
-2. 截图查看页面状态
-3. 检查按钮元素和事件
-```
+### 处理 GitHub App / Webhook
+- `app/api/github-app/**/route.ts`
+- `app/api/webhooks/github/route.ts`
+- `docs/GitHub-App配置指南.md`
 
-### 🔍 Web Search Prime - 网页搜索
-**用途**：搜索最新信息
+## 当前接口概况
+- 路由文件数：23
+- 接口路径数：23
+- HTTP 方法总数：28
+- 接口文档：`docs/API接口文档.md`
 
-**何时主动使用**：
-- 用户提到报错，但本地没有相关信息
-- 需要查找某个问题的解决方案
-- 不确定某个技术/库的最新状态
-- 查找最佳实践
+## 文档同步原则
+- 修改登录流、页面结构、接口、数据库规则后，要同步检查：
+  - `CLAUDE.md`
+  - `PROJECT_STATUS.md`
+  - `README.md`
+  - `docs/API接口文档.md`（若接口有改动）
+- 避免文档继续保留 `/login`、NextAuth、旧布局等过时描述
 
-### 📖 Web Reader - 网页内容读取
-**用途**：将网页转换为 markdown，便于 AI 理解
+## 不需要优先阅读的文件
+- `docs/OpenRouter-API配置指南.md`
+- `docs/GitHub-App配置指南.md`
+- 面向部署或接入的说明文档
 
-**何时主动使用**：
-- 用户分享了一个文档链接
-- 需要参考在线教程
-- 查看某个库的 GitHub README
-
-### 🖼️ Zai MCP - 图像/视频分析
-**用途**：分析截图、UI 图、数据可视化
-
-**何时主动使用**：
-- 用户上传了错误截图 → 用 `diagnose_error_screenshot`
-- 用户分享 UI 设计图 → 用 `ui_to_artifact`
-- 用户分享数据图表 → 用 `analyze_data_visualization`
-- 需要分析图片内容 → 用 `analyze_image`
-
----
-
-## 主动使用场景示例
-
-### 场景 1：用户遇到 Next.js 报错
-```
-用户: "报错 TypeError: Cannot read properties of undefined"
-
-AI 应该主动:
-1. 用 Web Search 搜索这个报错
-2. 用 Context7 查询 Next.js 相关文档
-3. 检查相关代码文件
-```
-
-### 场景 2：用户想实现新功能
-```
-用户: "我想添加用户头像上传功能"
-
-AI 应该主动:
-1. 用 Context7 查询相关库（如 react-dropzone）文档
-2. 检查现有用户数据模型
-3. 给出实现方案
-```
-
-### 场景 3：前端样式问题
-```
-用户: "这个按钮样式不对"
-
-AI 应该主动:
-1. 用 Chrome DevTools 打开页面
-2. 截图查看问题
-3. 检查元素样式
-```
-
-### 场景 4：用户分享链接
-```
-用户: "参考这个文档 https://xxx"
-
-AI 应该主动:
-1. 用 Web Reader 读取链接内容
-2. 理解文档内容
-3. 应用到项目中
-```
-
-### 场景 5：用户上传截图
-```
-用户: [上传错误截图]
-
-AI 应该主动:
-1. 用 diagnose_error_screenshot 分析错误
-2. 给出解决方案
-```
-
----
-
-## 重要原则
-
-**主动 ≠ 盲目**
-- 先判断任务类型
-- 选择合适的工具
-- 简要说明使用原因
-- 展示工具结果
-
-**示例**：
-```
-✅ 好的做法：
-"让我用 Context7 查一下 Zustand 的最新文档..."
-[调用工具]
-"根据文档，正确的用法是..."
-
-❌ 不好的做法：
-[默默调用工具]
-"[粘贴大量文档内容]"
-```
+## 额外提醒
+- 仓库配置页、仓库列表页、任务列表页是当前最容易出现交互性 Bug 的区域。
+- 当前部分接口的鉴权风格仍不完全统一，尤其是 GitHub App 相关接口，后续修改时要留意一致性。
+- `GET /api/openrouter/models` 依赖外部网络，异常时会返回空模型数组和 500。

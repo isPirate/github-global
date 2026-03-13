@@ -91,9 +91,11 @@ QUEUE_CONCURRENCY=5
 ### 3. 初始化数据库
 
 ```bash
-npx prisma db push
-npx prisma generate
+npm run db:generate
+npm run db:migrate
 ```
+
+> 按当前仓库约定，数据库结构变更统一使用 Prisma Migration，不使用 `db push` 修改正式开发结构。
 
 ### 4. 启动开发服务
 
@@ -121,6 +123,7 @@ http://localhost:3000
 ## 重要文档
 
 - [快速启动说明](./docs/快速启动说明.md)
+- [接口文档](./docs/API接口文档.md)
 - [GitHub App 配置指南](./docs/GitHub-App配置指南.md)
 - [OpenRouter API 配置指南](./docs/OpenRouter-API配置指南.md)
 
@@ -172,4 +175,4 @@ npm run db:studio
 
 ## 当前状态
 
-当前代码已完成一轮前端重构，登录、仓库、任务、设置和营销首页都已经统一到同一套界面结构中。
+当前代码已完成一轮前端重构，登录、仓库、任务、设置和营销首页都已经统一到同一套界面结构中，当前工作重点是修复重构后遗留的 Bug 并持续优化交互稳定性。
