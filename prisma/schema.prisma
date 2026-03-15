@@ -104,6 +104,8 @@ model TranslationConfig {
   repositoryId             String   @unique @map("repository_id")
   baseLanguage             String   @default("auto") @map("base_language")
   targetLanguages          Json     @map("target_languages") // ["en", "ja", "es"]
+  scopeMode                String   @default("preset_common_docs") @map("scope_mode")
+  selectedFiles            Json?    @map("selected_files")
   filePatterns             Json     @map("file_patterns") // ["**/*.md"]
   excludePatterns          Json?    @map("exclude_patterns") // ["!**/node_modules/**"]
   targetBranchTemplate     String   @default("i18n/{lang}") @map("target_branch_template")

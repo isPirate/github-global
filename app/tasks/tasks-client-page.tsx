@@ -88,6 +88,7 @@ export default function TasksClientPage({ initialUser }: TasksClientPageProps) {
   const stats = useMemo(
     () => ({
       total: tasks.length,
+      pending: tasks.filter((task) => task.status === 'pending').length,
       processing: tasks.filter((task) => task.status === 'processing').length,
       completed: tasks.filter((task) => task.status === 'completed').length,
       failed: tasks.filter((task) => task.status === 'failed').length,
@@ -95,7 +96,7 @@ export default function TasksClientPage({ initialUser }: TasksClientPageProps) {
     [tasks]
   )
 
-  const hasProcessingTasks = stats.processing > 0
+  const hasActiveTasks = stats.pending + stats.processing > 0
 
   const toggleTaskExpansion = (taskId: string) => {
     setExpandedTasks((previous) => {
@@ -156,7 +157,7 @@ export default function TasksClientPage({ initialUser }: TasksClientPageProps) {
   }, [fetchTasks])
 
   useEffect(() => {
-    if (!hasProcessingTasks) {
+    if (!hasActiveTasks) {
       return
     }
 
@@ -165,7 +166,7 @@ export default function TasksClientPage({ initialUser }: TasksClientPageProps) {
     }, 5000)
 
     return () => window.clearInterval(interval)
-  }, [fetchTasks, hasProcessingTasks])
+  }, [fetchTasks, hasActiveTasks])
 
   const handleRetryTask = async (taskId: string) => {
     try {
@@ -276,9 +277,9 @@ export default function TasksClientPage({ initialUser }: TasksClientPageProps) {
           </div>
         ) : null}
 
-        {hasProcessingTasks ? (
+        {hasActiveTasks ? (
           <div className="fixed bottom-24 right-6 z-40 flex items-center gap-3 rounded-[var(--radius-lg)] bg-blue-600 px-4 py-3 text-white shadow-[var(--shadow-md)] lg:bottom-8">
-            <Loader2 className={isRefreshing ? 'h-5 w-5 animate-spin' : 'h-5 w-5'} />
+            <Loader2 className={hasActiveTasks ? 'h-5 w-5 animate-spin' : 'h-5 w-5'} />
             <div className="flex flex-col">
               <span className="text-sm font-medium">翻译任务进行中</span>
               <span className="text-xs text-blue-100">

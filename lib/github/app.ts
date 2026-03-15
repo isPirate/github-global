@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken'
+﻿import jwt from 'jsonwebtoken'
 import { Octokit } from 'octokit'
 import type { InstallationAccessToken, GitHubInstallation } from './types'
 
@@ -17,11 +17,10 @@ export class GitHubAppManager {
     }
   }
 
-  // 生成 GitHub App JWT（用于认证）
   generateAppJWT(): string {
     const payload = {
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 60, // 1分钟过期
+      exp: Math.floor(Date.now() / 1000) + 60,
       iss: this.appId,
     }
 
@@ -30,7 +29,6 @@ export class GitHubAppManager {
     return jwt.sign(payload, privateKey, { algorithm: 'RS256' })
   }
 
-  // 获取 installation access token（1小时有效）
   async getInstallationToken(installationId: number): Promise<InstallationAccessToken> {
     const appJWT = this.generateAppJWT()
 
@@ -45,13 +43,16 @@ export class GitHubAppManager {
     return response.data as InstallationAccessToken
   }
 
-  // 获取安装的仓库列表
-  async getInstallationRepositories(installationId: number) {
+  async getInstallationOctokit(installationId: number) {
     const token = await this.getInstallationToken(installationId)
 
-    const octokit = new Octokit({
+    return new Octokit({
       auth: token.token,
     })
+  }
+
+  async getInstallationRepositories(installationId: number) {
+    const octokit = await this.getInstallationOctokit(installationId)
 
     const response = await octokit.rest.apps.listReposAccessibleToInstallation({
       installation_id: installationId,
@@ -60,7 +61,6 @@ export class GitHubAppManager {
     return response.data.repositories
   }
 
-  // 获取安装信息
   async getInstallation(installationId: number): Promise<GitHubInstallation> {
     const appJWT = this.generateAppJWT()
 
@@ -75,21 +75,18 @@ export class GitHubAppManager {
     return response.data as unknown as GitHubInstallation
   }
 
-  // 验证 webhook 签名
   verifyWebhookSignature(payload: string, signature: string): boolean {
     const hmac = require('crypto').createHmac('sha256', this.webhookSecret)
     const digest = 'sha256=' + hmac.update(payload).digest('hex')
     return signature === digest
   }
 
-  // 生成安装 URL
   getInstallationUrl(state: string): string {
     const appName = process.env.GITHUB_APP_NAME
     return `https://github.com/apps/${appName}/installations/new?state=${state}`
   }
 }
 
-// 单例实例
 let gitHubAppManager: GitHubAppManager | null = null
 
 export function getGitHubAppManager(): GitHubAppManager {

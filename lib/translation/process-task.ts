@@ -4,6 +4,15 @@ import { getEncryptionService } from '@/lib/crypto/encryption'
 import { createAppAuth } from '@octokit/auth-app'
 import { Octokit } from 'octokit'
 import { createHash } from 'crypto'
+import {
+  filterPathsByPatterns,
+  inferScopeMode,
+  normalizeBaseLanguage,
+  resolveExcludePatterns,
+  resolveFilePatterns,
+  sanitizeSelectedFiles,
+  sanitizeTargetLanguages,
+} from '@/lib/repository-config'
 
 function looksLikePlaintextOpenRouterKey(value: string | null | undefined) {
   return typeof value === 'string' && value.startsWith('sk-or-')
@@ -41,10 +50,6 @@ function resolveOpenRouterApiKey(repository: {
   }
 
   throw new Error('No valid OpenRouter API key found. Update the repository API key or configure a global OpenRouter API key in Settings.')
-}
-
-function sanitizeTargetLanguages(baseLanguage: string | undefined, languages: string[]) {
-  return Array.from(new Set(languages.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter((item) => item && item !== (baseLanguage || 'auto'))))
 }
 
 function resolveTranslationConfig(config: unknown): TranslationConfig {
@@ -144,9 +149,12 @@ export async function processTranslationTask(taskId: string, repository: any) {
       auth: installationAuthentication.token,
     })
 
-    const baseLanguage = fullRepository.config.baseLanguage
-    const targetLanguages = sanitizeTargetLanguages(baseLanguage, fullRepository.config.targetLanguages as string[])
-    const filePatterns = fullRepository.config.filePatterns as string[]
+    const baseLanguage = normalizeBaseLanguage(fullRepository.config.baseLanguage)
+    const targetLanguages = sanitizeTargetLanguages(baseLanguage, fullRepository.config.targetLanguages)
+    const scopeMode = inferScopeMode(fullRepository.config.scopeMode, fullRepository.config.filePatterns)
+    const selectedFiles = sanitizeSelectedFiles(fullRepository.config.selectedFiles)
+    const filePatterns = resolveFilePatterns(scopeMode, fullRepository.config.filePatterns)
+    const excludePatterns = resolveExcludePatterns(scopeMode, fullRepository.config.excludePatterns)
 
     if (targetLanguages.length === 0) {
       throw new Error('No valid target languages remain after excluding the base language')
@@ -167,39 +175,19 @@ export async function processTranslationTask(taskId: string, repository: any) {
       recursive: 'true',
     })
 
-    const filesToTranslate = treeData.tree.filter((item: any) => {
-      if (item.type !== 'blob') return false
-      return filePatterns.some((pattern) => {
-        let regexPattern = pattern
+    const repositoryFiles = treeData.tree.filter(
+      (item: any): item is { type: 'blob'; path: string } =>
+        item.type === 'blob' && typeof item.path === 'string'
+    )
 
-        if (pattern.startsWith('**/')) {
-          const suffix = pattern.substring(3)
-          regexPattern = '(.*/)?' + suffix.replace(/\./g, '\\.').replace(/\?/g, '.').replace(/\*/g, '[^/]*')
-        } else if (pattern.includes('**')) {
-          const parts = pattern.split('**')
-          regexPattern = parts
-            .map((part: string, i: number) => {
-              let p = part
-                .replace(/\./g, '\\.')
-                .replace(/\?/g, '.')
-                .replace(/\*/g, '[^/]*')
-                .replace(/\//g, '\\/')
-              if (i < parts.length - 1) p += '(.*)'
-              return p
-            })
-            .join('')
-        } else {
-          regexPattern = pattern
-            .replace(/\./g, '\\.')
-            .replace(/\?/g, '.')
-            .replace(/\*/g, '[^/]*')
-            .replace(/\//g, '\\/')
-        }
+    const filesToTranslate =
+      scopeMode === 'manual_selection'
+        ? repositoryFiles.filter((item) => selectedFiles.includes(item.path))
+        : repositoryFiles.filter((item) => filterPathsByPatterns([item.path], filePatterns, excludePatterns).length > 0)
 
-        const regex = new RegExp('^' + regexPattern + '$')
-        return regex.test(item.path)
-      })
-    })
+    if (filesToTranslate.length === 0) {
+      throw new Error('No files matched the current translation scope')
+    }
 
     await prisma.translationTask.update({
       where: { id: taskId },
@@ -277,7 +265,7 @@ export async function processTranslationTask(taskId: string, repository: any) {
 
             const result = await engine.translate(
               content,
-              fullRepository.config.baseLanguage,
+              baseLanguage,
               lang,
               {
                 fileName: file.path,
@@ -434,14 +422,18 @@ export async function processTranslationTask(taskId: string, repository: any) {
     let prUrl: string | null = null
 
     try {
-      const sourceLang = fullRepository.config.baseLanguage
+      const sourceLang = baseLanguage
       const targetLangs = Array.from(filesToCommit.keys())
         .map((lang) => lang.toUpperCase())
         .join(', ')
-      const prTitle = `docs: I18n Translation ${sourceLang.toUpperCase()} 鈫?${targetLangs} (${new Date().toLocaleDateString('zh-CN')})`
+      const prTitle = `docs: I18n Translation ${sourceLang.toUpperCase()} → ${targetLangs} (${new Date().toLocaleDateString('zh-CN')})`
 
       const languageList = Array.from(filesToCommit.entries())
         .map(([lang, files]) => `- **${lang.toUpperCase()}**: ${files.length} files`)
+        .join('\n')
+
+      const fileTreePreview = Array.from(filesToCommit.keys())
+        .map((lang) => `|- ${lang}/`)
         .join('\n')
 
       const sampleFiles = Array.from(filesToCommit.entries())
@@ -452,35 +444,35 @@ export async function processTranslationTask(taskId: string, repository: any) {
         .map((file) => `- ${file}`)
         .join('\n')
 
-      const prBody = `## 馃寪 Internationalization Translation
+      const prBody = `## Internationalization Translation
 
 This pull request contains automated translations for multiple languages.
 
-### 馃搳 Statistics
+### Statistics
 - **Languages**: ${filesToCommit.size}
 - **Total Files**: ${processedFiles}
 - **Failed Files**: ${failedFiles}
 - **Tokens Used**: ${totalTokens.toLocaleString()}
 
-### 馃摑 Language Breakdown
+### Language Breakdown
 ${languageList}
 
-### 馃搧 File Structure
+### File Structure
 Translations are organized under \`i18n/{lang}/\` directory:
 
 \`\`\`
 i18n/
-${Array.from(filesToCommit.keys()).map((lang) => `鈹溾攢鈹€ ${lang}/`).join('')}
-鈹?  鈹斺攢鈹€ ...
+${fileTreePreview}
+|- ...
 \`\`\`
 
-### 馃摑 Sample Files
+### Sample Files
 ${sampleFiles}
 ${filesToCommit.size > 0 && Array.from(filesToCommit.values()).flat().length > 10 ? '...\n*(Showing first 10 files)*' : ''}
 
 ---
 
-馃 Generated by [GitHub Global](https://github.com/apps/i18n-github-global) - Automated Translation Tool
+Generated by [GitHub Global](https://github.com/apps/i18n-github-global) - Automated Translation Tool
 
 **Note**: Please review the translations before merging.`
 

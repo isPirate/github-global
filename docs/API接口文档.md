@@ -1,14 +1,14 @@
 ﻿# GitHub Global API 接口文档
 
-更新时间：2026-03-13
+更新时间：2026-03-15
 
 本文档基于当前仓库 `app/api/**/route.ts` 源码整理，用于后续联调、排障和页面开发时快速查阅。
 
 ## 统计
 
-- 路由文件数：23
-- 接口路径数：23
-- HTTP 方法总数：28
+- 路由文件数：24
+- 接口路径数：24
+- HTTP 方法总数：29
 - 主要分组：`Auth`、`GitHub App`、`Repositories`、`Tasks`、`User Settings`、`OpenRouter`、`Webhooks`、`Debug`
 
 ## 鉴权说明
@@ -208,6 +208,7 @@
   - `engines`
   - `repository`
 - `engines` 中不会返回完整 API Key，只会返回 `hasApiKey`
+- `config` 当前会返回已归一化的 `baseLanguage`、`targetLanguages`、`scopeMode`、`selectedFiles`，以及与当前 scope 对应的 `filePatterns` / `excludePatterns`
 
 ### `POST /api/repositories/[id]/config`
 
@@ -218,8 +219,10 @@
 - 请求体字段：
   - `baseLanguage`
   - `targetLanguages`：必填，非空数组，且会自动剔除与基准语言相同的值
-  - `filePatterns`：必填，非空数组
-  - `excludePatterns`
+  - `scopeMode`：`preset_common_docs` / `preset_readme_docs` / `preset_all_markdown` / `manual_selection` / `advanced_rules`
+  - `selectedFiles`：手动选文件模式下使用
+  - `filePatterns`：仅高级规则模式必填
+  - `excludePatterns`：仅高级规则模式使用
   - `targetBranchTemplate`
   - `commitMessageTemplate`
   - `syncStrategy`
@@ -236,6 +239,7 @@
   - `engine`
 - 可能返回：
   - `400` `targetLanguages` 或 `filePatterns` 不合法
+  - `400` `manual_selection` 模式下未提供 `selectedFiles`
   - `400` 缺少引擎配置
   - `400` 新引擎缺少 `apiKey`
   - `404` 仓库不存在
@@ -282,6 +286,25 @@
 - 可能返回：
   - `400` 未配置、未启用或无可用引擎
   - `404` 仓库不存在
+
+### `GET /api/repositories/[id]/files`
+
+- 鉴权：登录态
+- 作用：获取仓库候选文档文件列表，用于配置页手动勾选翻译范围
+- 路径参数：
+  - `id`：数据库仓库 ID
+- 成功返回字段：
+  - `files`
+  - `totalCount`
+  - `defaultBranch`
+- `files` 单项字段：
+  - `path`
+  - `directory`
+  - `extension`
+  - `isDocumentationCandidate`
+- 说明：
+  - 当前优先返回文档类候选文件，如 `README*`、`docs/**`、`*.md`、`*.mdx`、`*.txt`
+  - 用于配置页“手动选择文件”模式，不直接创建翻译任务
 
 ### `GET /api/repositories/[id]/translations`
 
@@ -498,19 +521,18 @@
 
 ```json
 {
-  "baseLanguage": "en",
+  "baseLanguage": "auto",
   "targetLanguages": ["zh", "ja"],
-  "filePatterns": ["**/*.md", "**/*.mdx"],
+  "scopeMode": "preset_common_docs",
+  "selectedFiles": [],
+  "filePatterns": ["README*", "**/README*", "docs/**", "**/*.md", "**/*.mdx"],
   "excludePatterns": [],
-  "targetBranchTemplate": "i18n/{lang}",
-  "commitMessageTemplate": "docs: translate to {lang}",
-  "syncStrategy": "incremental",
   "triggerMode": "webhook",
   "engine": {
     "engineType": "openrouter",
     "apiKey": "or-xxx",
     "config": {
-      "model": "openai/gpt-4o",
+      "model": "openai/gpt-4o-mini",
       "temperature": 0.3
     },
     "isActive": true

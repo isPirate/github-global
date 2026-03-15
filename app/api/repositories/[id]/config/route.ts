@@ -2,18 +2,22 @@
 import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/db/prisma'
 import { getEncryptionService } from '@/lib/crypto/encryption'
+import {
+  inferScopeMode,
+  normalizeBaseLanguage,
+  resolveExcludePatterns,
+  resolveFilePatterns,
+  sanitizeSelectedFiles,
+  sanitizeTargetLanguages,
+} from '@/lib/repository-config'
 
 type RouteContext = {
   params: Promise<{ id: string }>
 }
 
-function sanitizeTargetLanguages(baseLanguage: string | undefined, languages: string[]) {
-  return Array.from(new Set(languages.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter((item) => item && item !== (baseLanguage || 'auto'))))
-}
-
 // GET /api/repositories/[id]/config - Get translation configuration
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   context: RouteContext
 ) {
   try {
@@ -27,7 +31,6 @@ export async function GET(
 
     console.log('[Config API] Fetching config for repository:', repositoryId)
 
-    // Find the repository
     const repository = await prisma.repository.findFirst({
       where: {
         id: repositoryId,
@@ -43,7 +46,6 @@ export async function GET(
       return NextResponse.json({ error: 'Repository not found' }, { status: 404 })
     }
 
-    // Get translation engines (without exposing the full API key)
     const engines = repository.engines.map((engine) => ({
       id: engine.id,
       engineType: engine.engineType,
@@ -52,8 +54,24 @@ export async function GET(
       hasApiKey: !!engine.encryptedApiKey,
     }))
 
+    const normalizedConfig = repository.config
+      ? (() => {
+          const scopeMode = inferScopeMode(repository.config.scopeMode, repository.config.filePatterns)
+
+          return {
+            ...repository.config,
+            baseLanguage: normalizeBaseLanguage(repository.config.baseLanguage),
+            targetLanguages: sanitizeTargetLanguages(repository.config.baseLanguage, repository.config.targetLanguages),
+            scopeMode,
+            selectedFiles: sanitizeSelectedFiles(repository.config.selectedFiles),
+            filePatterns: resolveFilePatterns(scopeMode, repository.config.filePatterns),
+            excludePatterns: resolveExcludePatterns(scopeMode, repository.config.excludePatterns),
+          }
+        })()
+      : null
+
     return NextResponse.json({
-      config: repository.config,
+      config: normalizedConfig,
       engines,
       repository: {
         id: repository.id,
@@ -86,7 +104,6 @@ export async function POST(
     const { id: repositoryId } = await context.params
     const body = await request.json()
 
-    // Validate the repository exists and belongs to the user
     const repository = await prisma.repository.findFirst({
       where: {
         id: repositoryId,
@@ -98,10 +115,11 @@ export async function POST(
       return NextResponse.json({ error: 'Repository not found' }, { status: 404 })
     }
 
-    // Validate required fields
     const {
       baseLanguage,
       targetLanguages,
+      scopeMode,
+      selectedFiles,
       filePatterns,
       excludePatterns,
       targetBranchTemplate,
@@ -118,7 +136,12 @@ export async function POST(
       )
     }
 
-    const sanitizedTargetLanguages = sanitizeTargetLanguages(baseLanguage, targetLanguages)
+    const normalizedBaseLanguage = normalizeBaseLanguage(baseLanguage)
+    const sanitizedTargetLanguages = sanitizeTargetLanguages(normalizedBaseLanguage, targetLanguages)
+    const normalizedScopeMode = inferScopeMode(scopeMode, filePatterns)
+    const normalizedSelectedFiles = sanitizeSelectedFiles(selectedFiles)
+    const normalizedFilePatterns = resolveFilePatterns(normalizedScopeMode, filePatterns)
+    const normalizedExcludePatterns = resolveExcludePatterns(normalizedScopeMode, excludePatterns)
 
     if (sanitizedTargetLanguages.length === 0) {
       return NextResponse.json(
@@ -127,14 +150,20 @@ export async function POST(
       )
     }
 
-    if (!filePatterns || !Array.isArray(filePatterns) || filePatterns.length === 0) {
+    if (normalizedScopeMode === 'manual_selection' && normalizedSelectedFiles.length === 0) {
       return NextResponse.json(
-        { error: 'filePatterns is required and must be a non-empty array' },
+        { error: 'selectedFiles is required when scopeMode is manual_selection' },
         { status: 400 }
       )
     }
 
-    // Validate engine configuration
+    if (normalizedScopeMode === 'advanced_rules' && normalizedFilePatterns.length === 0) {
+      return NextResponse.json(
+        { error: 'filePatterns is required and must be a non-empty array when using advanced_rules' },
+        { status: 400 }
+      )
+    }
+
     if (!engine) {
       return NextResponse.json(
         { error: 'Translation engine configuration is required' },
@@ -142,8 +171,6 @@ export async function POST(
       )
     }
 
-    // For new engines (no id), apiKey is required
-    // For existing engines, apiKey is optional (will keep existing if not provided)
     if (!engine.id && !engine.apiKey) {
       return NextResponse.json(
         { error: 'API Key is required for new translation engine' },
@@ -151,25 +178,28 @@ export async function POST(
       )
     }
 
-    // Upsert translation config
     const config = await prisma.translationConfig.upsert({
       where: { repositoryId },
       create: {
         repositoryId,
-        baseLanguage: baseLanguage || 'auto',
+        baseLanguage: normalizedBaseLanguage,
         targetLanguages: sanitizedTargetLanguages,
-        filePatterns,
-        excludePatterns: excludePatterns || [],
+        scopeMode: normalizedScopeMode,
+        selectedFiles: normalizedSelectedFiles,
+        filePatterns: normalizedFilePatterns,
+        excludePatterns: normalizedExcludePatterns,
         targetBranchTemplate: targetBranchTemplate || 'i18n/{lang}',
         commitMessageTemplate: commitMessageTemplate || 'docs: translate to {lang}',
         syncStrategy: syncStrategy || 'full',
         triggerMode: triggerMode || 'webhook',
       },
       update: {
-        baseLanguage: baseLanguage || 'auto',
+        baseLanguage: normalizedBaseLanguage,
         targetLanguages: sanitizedTargetLanguages,
-        filePatterns,
-        excludePatterns: excludePatterns || [],
+        scopeMode: normalizedScopeMode,
+        selectedFiles: normalizedSelectedFiles,
+        filePatterns: normalizedFilePatterns,
+        excludePatterns: normalizedExcludePatterns,
         targetBranchTemplate: targetBranchTemplate || 'i18n/{lang}',
         commitMessageTemplate: commitMessageTemplate || 'docs: translate to {lang}',
         syncStrategy: syncStrategy || 'full',
@@ -179,27 +209,23 @@ export async function POST(
 
     const encryptionService = getEncryptionService()
 
-    // Upsert translation engine
     let translationEngine
 
     if (engine.id) {
-      // Update existing engine
       translationEngine = await prisma.translationEngine.update({
         where: { id: engine.id },
         data: {
-          // Only update API key if provided
           ...(engine.apiKey && { encryptedApiKey: encryptionService.encrypt(engine.apiKey) }),
           config: engine.config || { model: 'openai/gpt-4-turbo', temperature: 0.3 },
           isActive: engine.isActive !== undefined ? engine.isActive : true,
         },
       })
     } else {
-      // Create new engine (apiKey is required here, validated above)
       translationEngine = await prisma.translationEngine.create({
         data: {
           repositoryId,
           engineType: engine.engineType || 'openrouter',
-          encryptedApiKey: encryptionService.encrypt(engine.apiKey!), // Non-null assertion is safe here due to validation
+          encryptedApiKey: encryptionService.encrypt(engine.apiKey!),
           config: engine.config || { model: 'openai/gpt-4-turbo', temperature: 0.3 },
           isActive: engine.isActive !== undefined ? engine.isActive : true,
         },
@@ -224,4 +250,3 @@ export async function POST(
     )
   }
 }
-

@@ -100,6 +100,17 @@ assert(
 )
 
 assert(
+  tasksClientPage.includes("task.status === 'pending'") &&
+    tasksClientPage.includes('const hasActiveTasks = stats.pending + stats.processing > 0'),
+  'Tasks client page should treat pending and processing tasks as active for auto refresh'
+)
+
+assert(
+  tasksClientPage.includes("Loader2 className={hasActiveTasks ? 'h-5 w-5 animate-spin' : 'h-5 w-5'}"),
+  'Tasks client page should keep the floating auto-refresh indicator spinning while active tasks exist'
+)
+
+assert(
   !tasksClientPage.includes("username: 'Loading...'"),
   'Tasks client page should not replace the user menu with a loading placeholder'
 )
