@@ -68,10 +68,15 @@ npm install
 
 ```bash
 copy .env.example .env.local
-copy .env.local .env
 ```
 
-至少需要配置这些项：
+然后单独创建一个最小化的 `.env`，只给 Prisma CLI 用：
+
+```bash
+Set-Content .env 'DATABASE_URL="mysql://root:password@localhost:3306/github_global"'
+```
+
+`.env.local` 里至少需要配置这些项：
 
 ```env
 DATABASE_URL="mysql://root:password@localhost:3306/github_global"
@@ -82,14 +87,18 @@ GITHUB_CLIENT_SECRET="your_github_oauth_client_secret"
 GITHUB_OAUTH_CALLBACK_URL="http://localhost:3000/api/auth/callback"
 
 GITHUB_APP_ID="your_github_app_id"
-GITHUB_APP_NAME="your_github_app_name"
+GITHUB_APP_SLUG="your_github_app_slug"
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
 GITHUB_APP_WEBHOOK_SECRET="your_webhook_secret"
 
-APP_URL="http://localhost:3000"
-APP_NAME="GitHub Global"
+APP_BASE_URL="http://localhost:3000"
+GITHUB_APP_WEBHOOK_URL="http://localhost:3000/api/webhooks/github"
 QUEUE_CONCURRENCY=5
 ```
+
+> 当前仓库约定：
+> `.env.local` 保存应用运行时的完整配置；
+> `.env` 只保留 `DATABASE_URL`，避免维护两份完整配置。
 
 ### 3. 初始化数据库
 
@@ -174,7 +183,7 @@ npm run db:studio
 
 - 不要把 `.env`、`.env.local`、私钥文件提交到仓库
 - 不要把真实 Client Secret、Webhook Secret、数据库密码写入文档
-- 本地开发和 OAuth 回调请统一使用 `http://localhost:3000`
+- OAuth 回调地址必须与 `GITHUB_OAUTH_CALLBACK_URL` 以及 GitHub OAuth App 后台配置完全一致
 
 ## 当前状态
 

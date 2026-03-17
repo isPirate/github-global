@@ -29,6 +29,7 @@ GITHUB_OAUTH_CALLBACK_URL="http://localhost:3000/api/auth/callback"
 ```
 
 > 本地开发统一使用 `localhost`，不要混用 `127.0.0.1`。
+> 项目根目录 `.env` 建议只保留 `DATABASE_URL`，不要再复制整份 `.env.local` 进去。
 
 ## 二、GitHub App（用于仓库操作）
 
@@ -80,9 +81,11 @@ MVP 本地开发推荐：
 
 ```env
 GITHUB_APP_ID="your_github_app_id"
-GITHUB_APP_NAME="your_github_app_name"
+GITHUB_APP_SLUG="your_github_app_slug"
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
 GITHUB_APP_WEBHOOK_SECRET="your_webhook_secret"
+APP_BASE_URL="http://localhost:3000"
+GITHUB_APP_WEBHOOK_URL="http://localhost:3000/api/webhooks/github"
 ```
 
 > 不要把 `.pem` 文件或真实私钥内容提交到仓库或文档。

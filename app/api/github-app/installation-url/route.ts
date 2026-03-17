@@ -1,25 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
+import { getGitHubAppSlug } from '@/lib/config/app'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const appName = process.env.GITHUB_APP_NAME
+    const appSlug = getGitHubAppSlug()
 
-    if (!appName) {
+    if (!appSlug) {
       return NextResponse.json(
-        { error: 'GitHub App name not configured' },
+        { error: 'GitHub App slug not configured' },
         { status: 500 }
       )
     }
-
-    // Convert app name to URL slug format:
-    // - Convert to lowercase
-    // - Replace spaces with hyphens
-    // - Remove special characters
-    const appSlug = appName
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '') // Remove special chars except spaces and hyphens
-      .trim()
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
 
     // GitHub App installation URL format
     // Use /installations/new for new installations
@@ -29,7 +20,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       installationUrl,
       appUrl,
-      appName,
+      appName: appSlug,
       appSlug,
     })
   } catch (error) {

@@ -1,4 +1,5 @@
 import OpenAI from 'openai'
+import { getAppBaseUrl } from '@/lib/config/app'
 
 export interface TranslationConfig {
   model: string
@@ -32,7 +33,7 @@ export class OpenRouterEngine {
       apiKey: apiKey,
       baseURL: 'https://openrouter.ai/api/v1',
       defaultHeaders: {
-        'HTTP-Referer': process.env.APP_URL || 'http://localhost:3000',
+        'HTTP-Referer': getAppBaseUrl(),
         'X-Title': 'GitHub Global',
       },
     })

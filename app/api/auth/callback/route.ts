@@ -6,24 +6,26 @@ import {
   fetchGitHubUser,
   fetchGitHubEmails,
 } from '@/lib/github-fetch'
+import { getAppBaseUrl } from '@/lib/config/app'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const code = searchParams.get('code')
   const error = searchParams.get('error')
   const errorDescription = searchParams.get('error_description')
+  const appBaseUrl = getAppBaseUrl()
 
   // 如果 GitHub 返回错误
   if (error) {
     console.error('GitHub OAuth error:', error, errorDescription)
     return NextResponse.redirect(
-      new URL(`/?error=${error}&description=${encodeURIComponent(errorDescription || '')}`, request.url)
+      new URL(`/?error=${error}&description=${encodeURIComponent(errorDescription || '')}`, appBaseUrl)
     )
   }
 
   if (!code) {
     console.error('Missing authorization code')
-    return NextResponse.redirect(new URL('/?error=missing_code', request.url))
+    return NextResponse.redirect(new URL('/?error=missing_code', appBaseUrl))
   }
 
   try {
@@ -88,13 +90,13 @@ export async function GET(request: NextRequest) {
     console.log('[OAuth] Session created, redirecting to dashboard')
 
     // 重定向到 dashboard
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    return NextResponse.redirect(new URL('/dashboard', appBaseUrl))
   } catch (error) {
     console.error('[OAuth] Error:', error)
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
 
     return NextResponse.redirect(
-      new URL(`/?error=oauth_failed&message=${encodeURIComponent(errorMessage)}`, request.url)
+      new URL(`/?error=oauth_failed&message=${encodeURIComponent(errorMessage)}`, appBaseUrl)
     )
   }
 }

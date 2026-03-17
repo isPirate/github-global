@@ -96,7 +96,10 @@ docs/
 ## 重要约定
 - GitHub App ID：`2890267`
 - 数据库：MySQL `github_global`
-- 本地开发统一使用 `http://localhost:3000`
+- 纯本地开发建议使用 `http://localhost:3000`
+- 若通过 ngrok 域名访问，`GITHUB_OAUTH_CALLBACK_URL` 必须与 GitHub OAuth App 后台配置完全一致
+- 当前环境变量以 `APP_BASE_URL`、`GITHUB_APP_WEBHOOK_URL`、`GITHUB_APP_SLUG` 为准，不再使用旧的 `APP_URL`、`GITHUB_APP_NAME`、`NEXTAUTH_*`
+- 当前仓库约定 `.env.local` 保存完整应用配置，根目录 `.env` 仅保留 `DATABASE_URL` 供 Prisma CLI 使用
 - Webhook 必须验证签名
 - OpenRouter API Key 必须加密存储
 

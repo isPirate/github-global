@@ -27,6 +27,7 @@
 - 任务页右下角的自动刷新提示已覆盖 `pending` 和 `processing` 任务，活跃任务存在时会持续转圈提示
 - 翻译任务创建 PR 时的标题与正文文案已修正乱码，标题恢复使用 `→`
 - 已补充 `docs/API接口文档.md`，便于后续联调与排障
+- 环境变量已收敛为 `APP_BASE_URL`、`GITHUB_APP_WEBHOOK_URL`、`GITHUB_APP_SLUG` 等更清晰的命名，不再保留旧的 `APP_URL` / `GITHUB_APP_NAME` / `NEXTAUTH_*` 配置
 
 ## 已完成功能
 
@@ -152,6 +153,9 @@
 ## 文档注意事项
 
 - 文档中不再保留任何真实密钥、密码或 Secret
-- 本地开发统一使用 `http://localhost:3000`
+- 纯本地开发建议使用 `http://localhost:3000`
+- 如果通过 ngrok 域名访问，`GITHUB_OAUTH_CALLBACK_URL` 必须与 GitHub OAuth App 后台配置完全一致
+- GitHub App 安装链接统一以 `GITHUB_APP_SLUG` 为准，Webhook 地址统一以 `GITHUB_APP_WEBHOOK_URL` 为准
+- 根目录 `.env` 仅保留 `DATABASE_URL`，完整应用配置统一维护在 `.env.local`
 - 旧的 `/login` 页面描述、NextAuth.js 描述、过时页面结构均已弃用
 - 接口改动后同步维护 `docs/API接口文档.md`

@@ -5,6 +5,7 @@
 
 import { createAppAuth } from '@octokit/auth-app'
 import { Octokit } from 'octokit'
+import { getGitHubAppWebhookUrl } from '@/lib/config/app'
 
 export interface GitHubAppConfig {
   appId: number
@@ -151,7 +152,7 @@ export async function createRepositoryWebhook(
     repo: repoName,
     name: 'web',
     config: {
-      url: `${process.env.APP_URL}/api/webhooks/github`,
+      url: getGitHubAppWebhookUrl(),
       content_type: 'json',
       secret: webhookSecret,
       insecure_ssl: '0',

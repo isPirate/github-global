@@ -81,7 +81,7 @@
 ### `GET /api/github-app/install-link`
 
 - 鉴权：登录态
-- 作用：优先通过 GitHub API 获取当前 GitHub App 的 slug 和安装链接，失败时回退到环境变量推导
+- 作用：根据 `GITHUB_APP_ID` 与 `GITHUB_APP_SLUG` 返回当前 GitHub App 的安装链接
 - 成功返回字段：
   - `appId`
   - `slug`
@@ -95,7 +95,7 @@
 ### `GET /api/github-app/installation-url`
 
 - 鉴权：公开
-- 作用：仅根据 `GITHUB_APP_NAME` 推导安装页 URL
+- 作用：根据 `GITHUB_APP_SLUG` 推导安装页 URL
 - 成功返回字段：
   - `installationUrl`
   - `appUrl`

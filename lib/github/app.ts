@@ -1,6 +1,7 @@
 ﻿import jwt from 'jsonwebtoken'
 import { Octokit } from 'octokit'
 import type { InstallationAccessToken, GitHubInstallation } from './types'
+import { getGitHubAppSlug } from '@/lib/config/app'
 
 export class GitHubAppManager {
   private appId: string
@@ -82,8 +83,8 @@ export class GitHubAppManager {
   }
 
   getInstallationUrl(state: string): string {
-    const appName = process.env.GITHUB_APP_NAME
-    return `https://github.com/apps/${appName}/installations/new?state=${state}`
+    const appSlug = getGitHubAppSlug()
+    return `https://github.com/apps/${appSlug}/installations/new?state=${state}`
   }
 }
 
