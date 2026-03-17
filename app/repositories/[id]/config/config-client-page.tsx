@@ -84,6 +84,21 @@ const RUN_MODES = [
   },
 ] as const
 
+const ENGINE_TYPE_OPTIONS: SearchableSelectOption[] = [
+  {
+    value: 'openrouter',
+    label: 'OpenRouter（推荐）',
+    description: '适合需要更灵活切换模型的场景',
+    keywords: ['openrouter', '推荐', 'router'],
+  },
+  {
+    value: 'openai',
+    label: 'OpenAI',
+    description: '适合已经有 OpenAI Key 的团队直接接入',
+    keywords: ['openai'],
+  },
+]
+
 const OPENAI_MODELS = ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo']
 
 const POPULAR_OPENROUTER_MODELS = [
@@ -726,23 +741,22 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
           <div className="space-y-5 p-6">
             <div className="space-y-2">
               <label className="text-sm font-medium">引擎类型</label>
-              <select
+              <SearchableSelect
                 value={engine.engineType}
-                onChange={(event) =>
+                options={ENGINE_TYPE_OPTIONS}
+                onChange={(value) =>
                   setEngine((prev) => ({
                     ...prev,
-                    engineType: event.target.value,
+                    engineType: value as string,
                     config: {
                       ...prev.config,
-                      model: event.target.value === 'openai' ? OPENAI_MODELS[0] : 'openai/gpt-4o-mini',
+                      model: value === 'openai' ? OPENAI_MODELS[0] : 'openai/gpt-4o-mini',
                     },
                   }))
                 }
-                className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary"
-              >
-                <option value="openrouter">OpenRouter（推荐）</option>
-                <option value="openai">OpenAI</option>
-              </select>
+                placeholder="选择翻译引擎"
+                emptyText="没有可用引擎类型"
+              />
             </div>
 
             <div className="space-y-2">
