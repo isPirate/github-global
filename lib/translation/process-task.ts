@@ -61,12 +61,15 @@ function resolveTranslationConfig(config: unknown): TranslationConfig {
   }
 
   const candidate = config as Record<string, unknown>
+  const rawModel =
+    typeof candidate.model === 'string' && candidate.model.length > 0
+      ? candidate.model
+      : 'openai/gpt-4-turbo'
+  const normalizedModel =
+    rawModel === 'deepseek/deepseek-v3' ? 'deepseek/deepseek-chat' : rawModel
 
   return {
-    model:
-      typeof candidate.model === 'string' && candidate.model.length > 0
-        ? candidate.model
-        : 'openai/gpt-4-turbo',
+    model: normalizedModel,
     fallbackModels: Array.isArray(candidate.fallbackModels)
       ? candidate.fallbackModels.filter(
           (item): item is string => typeof item === 'string'

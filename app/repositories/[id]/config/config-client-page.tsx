@@ -101,13 +101,17 @@ const ENGINE_TYPE_OPTIONS: SearchableSelectOption[] = [
 
 const OPENAI_MODELS = ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo']
 
-const POPULAR_OPENROUTER_MODELS = [
-  { id: 'openai/gpt-4o', name: 'GPT-4o', description: 'OpenAI' },
-  { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', description: 'OpenAI' },
-  { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', description: 'Anthropic' },
-  { id: 'deepseek/deepseek-v3', name: 'DeepSeek V3', description: 'DeepSeek' },
-  { id: 'google/gemini-pro-1.5', name: 'Gemini Pro 1.5', description: 'Google' },
-]
+function normalizeOpenRouterModelId(model: string, engineType: string) {
+  if (engineType !== 'openrouter') {
+    return model
+  }
+
+  if (model === 'deepseek/deepseek-v3') {
+    return 'deepseek/deepseek-chat'
+  }
+
+  return model
+}
 
 function buildDefaultConfig(): TranslationConfig {
   return {
@@ -187,17 +191,11 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
   }, [])
 
   const availableOpenRouterModels = useMemo(() => {
-    const models = [...POPULAR_OPENROUTER_MODELS]
-
-    openRouterModels.forEach((model) => {
-      if (!models.find((item) => item.id === model.id)) {
-        models.push({
-          id: model.id,
-          name: model.name,
-          description: model.description || '',
-        })
-      }
-    })
+    const models = openRouterModels.map((model) => ({
+      id: model.id,
+      name: model.name,
+      description: model.description || '',
+    }))
 
     if (engine.config.model && !models.find((item) => item.id === engine.config.model)) {
       models.push({
@@ -242,8 +240,7 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
   const isKnownOpenRouterModel = useMemo(
     () =>
       Boolean(engine.config.model) &&
-      (POPULAR_OPENROUTER_MODELS.some((item) => item.id === engine.config.model) ||
-        openRouterModels.some((item) => item.id === engine.config.model)),
+      openRouterModels.some((item) => item.id === engine.config.model),
     [engine.config.model, openRouterModels]
   )
 
@@ -317,7 +314,10 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
         setEngine({
           id: activeEngine.id,
           engineType: activeEngine.engineType,
-          config: activeEngine.config,
+          config: {
+            ...activeEngine.config,
+            model: normalizeOpenRouterModelId(activeEngine.config.model, activeEngine.engineType),
+          },
           isActive: activeEngine.isActive,
           hasApiKey: activeEngine.hasApiKey,
         })
