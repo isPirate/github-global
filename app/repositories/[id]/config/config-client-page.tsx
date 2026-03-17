@@ -18,6 +18,7 @@ import ContentScopePicker from '@/components/repository/content-scope-picker'
 import LanguageMultiSelect from '@/components/repository/language-multi-select'
 import RepositoryFilePicker from '@/components/repository/repository-file-picker'
 import { useToast } from '@/components/toast/use-toast'
+import SearchableSelect, { type SearchableSelectOption } from '@/components/ui/searchable-select'
 import { GLOBAL_LANGUAGES } from '@/lib/i18n/languages'
 import {
   DEFAULT_SCOPE_MODE,
@@ -142,6 +143,17 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
     []
   )
 
+  const baseLanguageSelectOptions = useMemo<SearchableSelectOption[]>(
+    () =>
+      baseLanguageOptions.map((language) => ({
+        value: language.code,
+        label: `${language.nativeName} (${language.code})`,
+        description: language.code === 'auto' ? '系统将自动识别源语言' : language.name,
+        keywords: [language.code, language.name, language.nativeName],
+      })),
+    [baseLanguageOptions]
+  )
+
   const fetchOpenRouterModels = useCallback(async () => {
     try {
       setModelsLoading(true)
@@ -182,6 +194,35 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
 
     return models
   }, [engine.config.model, openRouterModels])
+
+  const openRouterModelOptions = useMemo<SearchableSelectOption[]>(
+    () => [
+      ...availableOpenRouterModels.map((model) => ({
+        value: model.id,
+        label: model.name,
+        description: model.description || model.id,
+        keywords: [model.id, model.name, model.description || ''],
+      })),
+      {
+        value: '__custom__',
+        label: '自定义模型 ID…',
+        description: '手动输入完整模型标识',
+        keywords: ['custom', '自定义', 'model id'],
+      },
+    ],
+    [availableOpenRouterModels]
+  )
+
+  const openAiModelOptions = useMemo<SearchableSelectOption[]>(
+    () =>
+      OPENAI_MODELS.map((model) => ({
+        value: model,
+        label: model,
+        description: 'OpenAI',
+        keywords: [model, 'openai'],
+      })),
+    []
+  )
 
   const isKnownOpenRouterModel = useMemo(
     () =>
@@ -576,24 +617,20 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
           <div className="space-y-6 p-6">
             <div className="space-y-2">
               <label className="text-sm font-medium">基准语言</label>
-              <select
+              <SearchableSelect
                 value={config.baseLanguage}
-                onChange={(event) => {
-                  const nextBaseLanguage = event.target.value
+                options={baseLanguageSelectOptions}
+                onChange={(value) => {
+                  const nextBaseLanguage = value as string
                   setConfig((prev) => ({
                     ...prev,
                     baseLanguage: nextBaseLanguage,
                     targetLanguages: sanitizeTargetLanguages(nextBaseLanguage, prev.targetLanguages),
                   }))
                 }}
-                className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary"
-              >
-                {baseLanguageOptions.map((language) => (
-                  <option key={language.code} value={language.code}>
-                    {language.nativeName} ({language.code})
-                  </option>
-                ))}
-              </select>
+                placeholder="选择基准语言"
+                emptyText="没有找到匹配语言"
+              />
               <p className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Info className="h-3.5 w-3.5" />
                 如果仓库文档语言不固定，保持“自动识别”会更稳妥。
@@ -740,10 +777,11 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
 
               {engine.engineType === 'openrouter' ? (
                 <>
-                  <select
+                  <SearchableSelect
                     value={showCustomModelInput ? '__custom__' : engine.config.model}
-                    onChange={(event) => {
-                      if (event.target.value === '__custom__') {
+                    options={openRouterModelOptions}
+                    onChange={(value) => {
+                      if (value === '__custom__') {
                         setShowCustomModelInput(true)
                         setEngine((prev) => ({
                           ...prev,
@@ -760,19 +798,13 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
                         ...prev,
                         config: {
                           ...prev.config,
-                          model: event.target.value,
+                          model: value as string,
                         },
                       }))
                     }}
-                    className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary"
-                  >
-                    {availableOpenRouterModels.map((model) => (
-                      <option key={model.id} value={model.id}>
-                        {model.name}
-                      </option>
-                    ))}
-                    <option value="__custom__">自定义模型 ID…</option>
-                  </select>
+                    placeholder="选择翻译模型"
+                    emptyText="没有找到匹配模型"
+                  />
 
                   {showCustomModelInput && (
                     <div className="space-y-2 rounded-xl border bg-muted/20 p-4">
@@ -796,25 +828,21 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
                   )}
                 </>
               ) : (
-                <select
+                <SearchableSelect
                   value={engine.config.model}
-                  onChange={(event) =>
+                  options={openAiModelOptions}
+                  onChange={(value) =>
                     setEngine((prev) => ({
                       ...prev,
                       config: {
                         ...prev.config,
-                        model: event.target.value,
+                        model: value as string,
                       },
                     }))
                   }
-                  className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary"
-                >
-                  {OPENAI_MODELS.map((model) => (
-                    <option key={model} value={model}>
-                      {model}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="选择翻译模型"
+                  emptyText="没有找到匹配模型"
+                />
               )}
             </div>
           </div>

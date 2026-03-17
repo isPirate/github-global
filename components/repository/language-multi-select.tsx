@@ -1,8 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { Check, Search, X } from 'lucide-react'
-import { GLOBAL_LANGUAGES, POPULAR_LANGUAGE_CODES, type GlobalLanguage } from '@/lib/i18n/languages'
+import { useMemo } from 'react'
+import { X } from 'lucide-react'
+import SearchableSelect, { type SearchableSelectOption } from '@/components/ui/searchable-select'
+import { GLOBAL_LANGUAGES, POPULAR_LANGUAGE_CODES } from '@/lib/i18n/languages'
 
 interface LanguageMultiSelectProps {
   selectedCodes: string[]
@@ -10,28 +11,11 @@ interface LanguageMultiSelectProps {
   onChange: (codes: string[]) => void
 }
 
-function matchesQuery(language: GlobalLanguage, query: string) {
-  if (!query) {
-    return true
-  }
-
-  const normalizedQuery = query.trim().toLowerCase()
-
-  return (
-    language.code.toLowerCase().includes(normalizedQuery) ||
-    language.name.toLowerCase().includes(normalizedQuery) ||
-    language.nativeName.toLowerCase().includes(normalizedQuery) ||
-    language.searchTerms.some((term) => term.toLowerCase().includes(normalizedQuery))
-  )
-}
-
 export default function LanguageMultiSelect({
   selectedCodes,
   excludedCodes = [],
   onChange,
 }: LanguageMultiSelectProps) {
-  const [query, setQuery] = useState('')
-
   const availableLanguages = useMemo(
     () => GLOBAL_LANGUAGES.filter((language) => !excludedCodes.includes(language.code)),
     [excludedCodes]
@@ -52,17 +36,17 @@ export default function LanguageMultiSelect({
     [availableLanguages, selectedCodes]
   )
 
-  const filteredLanguages = useMemo(
+  const languageOptions = useMemo<SearchableSelectOption[]>(
     () =>
-      availableLanguages.filter(
-        (language) => matchesQuery(language, query) && !selectedCodes.includes(language.code)
-      ),
-    [availableLanguages, query, selectedCodes]
-  )
-
-  const visibleLanguages = useMemo(
-    () => (query ? filteredLanguages : filteredLanguages.slice(0, 18)),
-    [filteredLanguages, query]
+      availableLanguages
+        .filter((language) => !selectedCodes.includes(language.code))
+        .map((language) => ({
+          value: language.code,
+          label: `${language.nativeName} (${language.code})`,
+          description: language.name,
+          keywords: [language.code, language.name, language.nativeName, ...language.searchTerms],
+        })),
+    [availableLanguages, selectedCodes]
   )
 
   const toggleLanguage = (code: string) => {
@@ -102,7 +86,7 @@ export default function LanguageMultiSelect({
         )}
       </div>
 
-      {popularLanguages.length > 0 && (
+      {popularLanguages.length > 0 ? (
         <div className="space-y-2">
           <div className="text-sm font-medium">常用语言</div>
           <div className="flex flex-wrap gap-2">
@@ -119,52 +103,24 @@ export default function LanguageMultiSelect({
             ))}
           </div>
         </div>
-      )}
+      ) : null}
 
       <div className="space-y-3">
         <label className="text-sm font-medium">搜索更多语言</label>
         <p className="text-xs text-muted-foreground">
-          先从常用语言里快速选择；如果要覆盖更多全球语言，输入关键词再搜索会更高效。
+          先从常用语言里快速选择；如果要覆盖更多全球语言，打开搜索下拉会更高效。
         </p>
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="输入语言名、代码或本地名称"
-            className="w-full rounded-xl border bg-background py-2.5 pl-10 pr-3 text-sm outline-none transition-colors focus:border-primary"
-          />
-        </div>
-
-        <div className="max-h-72 overflow-y-auto rounded-xl border bg-background">
-          {visibleLanguages.length > 0 ? (
-            visibleLanguages.map((language) => (
-              <button
-                key={language.code}
-                type="button"
-                onClick={() => toggleLanguage(language.code)}
-                className="flex w-full items-center justify-between gap-3 border-b px-4 py-3 text-left transition-colors last:border-b-0 hover:bg-muted/40"
-              >
-                <div>
-                  <div className="text-sm font-medium">{language.nativeName}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {language.name} · {language.code}
-                  </div>
-                </div>
-                {selectedCodes.includes(language.code) && (
-                  <Check className="h-4 w-4 text-primary" />
-                )}
-              </button>
-            ))
-          ) : (
-            <div className="px-4 py-6 text-sm text-muted-foreground">没有找到匹配语言</div>
-          )}
-        </div>
-        {!query && filteredLanguages.length > visibleLanguages.length && (
-          <p className="text-xs text-muted-foreground">
-            当前只显示前 {visibleLanguages.length} 个候选语言，输入关键词可查看完整全球语言列表。
-          </p>
-        )}
+        <SearchableSelect
+          multiple
+          value={selectedCodes}
+          options={languageOptions}
+          onChange={(codes) => onChange(codes as string[])}
+          placeholder="搜索并添加目标语言"
+          emptyText="没有找到匹配语言"
+          renderTriggerLabel={() =>
+            languageOptions.length > 0 ? '搜索更多语言' : '可选语言已全部加入'
+          }
+        />
       </div>
     </div>
   )
