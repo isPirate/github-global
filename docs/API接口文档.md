@@ -182,7 +182,7 @@
 ### `DELETE /api/repositories/[id]`
 
 - 鉴权：登录态
-- 作用：删除仓库记录；若已有 webhook，则先尝试删除 GitHub webhook
+- 作用：删除仓库记录
 - 路径参数：
   - `id`：数据库仓库 ID
 - 成功返回：
@@ -430,7 +430,7 @@
 ### `POST /api/webhooks/github`
 
 - 鉴权：Webhook 签名
-- 作用：接收 GitHub Webhook 事件，并处理安装相关同步
+- 作用：接收 GitHub Webhook 事件；处理安装相关同步，并在符合条件时根据 GitHub App 已订阅并送达的仓库事件自动创建翻译任务
 - 关键请求头：
   - `x-hub-signature-256`
   - `x-github-delivery`
@@ -440,9 +440,13 @@
   - 校验 HMAC-SHA256 签名
   - 防重：若 delivery 已处理过则直接返回
   - 记录 `webhook_events`
-  - 处理 `installation` 和 `installation_repositories` 事件
+  - 处理 `installation` 和 `installation_repositories` 事件（这两个属于 GitHub App 默认送达事件，无需手动订阅）
   - 若 action 为 `created` / `added`，写入或更新 installation
   - 若 action 为 `deleted`，删除 installation
+  - 对其他带 `repository` 上下文的事件，按仓库配置判断是否自动触发翻译
+  - `push` 事件仅默认分支可触发
+  - 仅当仓库已启用、已配置、`triggerMode === webhook` 且存在可用引擎时，自动创建 `translationTask`
+  - 对同一 delivery 做幂等；若 payload 含 commit SHA，再按同一仓库同一 commit SHA 去重，避免重复入队
 - 成功返回：
 
 ```json

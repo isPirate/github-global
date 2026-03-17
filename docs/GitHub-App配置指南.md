@@ -64,7 +64,21 @@ https://github.com/settings/apps
 | Contents | Read & Write |
 | Pull requests | Read & Write |
 | Metadata | Read-only |
-| Administration | Read & Write |
+
+### Subscribe to events
+
+需要在 GitHub App 后台手动订阅的事件，至少建议：
+
+- `push`
+
+如果你想方便测试自动触发，也可以临时额外订阅：
+
+- `repository`
+
+另外这两个事件是 GitHub App 默认就会收到的，不需要也不能手动勾选：
+
+- `installation`
+- `installation_repositories`
 
 ### 安装范围
 
@@ -118,7 +132,11 @@ GITHUB_APP_WEBHOOK_URL="http://localhost:3000/api/webhooks/github"
 
 ### 验证 Webhook
 
-- 仓库 push 后，应用能收到 `/api/webhooks/github` 请求
+- GitHub App 后台 Recent Deliveries 能看到 `/api/webhooks/github` 收到事件
+- `installation` / `installation_repositories` 属于 GitHub App 默认事件，即使不在“Subscribe to events”里勾选也会送达
+- 订阅 `push` 后，默认分支 push 能自动创建翻译任务
+- 若额外订阅了 `repository`，仓库元数据事件也可用于测试自动触发
+- 当前项目统一使用 GitHub App 的单个 App 级 webhook，不需要在每个仓库里再手动添加 webhook URL
 
 ## 六、常见问题
 

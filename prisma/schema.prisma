@@ -80,7 +80,6 @@ model Repository {
   language         String?
   stargazersCount  Int      @default(0) @map("stargazers_count")
   isActive         Boolean  @default(true) @map("is_active")
-  webhookId        String?  @map("webhook_id")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 

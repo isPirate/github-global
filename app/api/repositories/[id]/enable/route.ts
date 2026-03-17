@@ -8,7 +8,7 @@ type RouteContext = {
 
 // POST /api/repositories/[id]/enable - Enable translation for a repository
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   context: RouteContext
 ) {
   try {

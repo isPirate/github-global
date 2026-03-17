@@ -43,6 +43,7 @@
 - 安装状态同步
 - 仓库权限管理跳转
 - Webhook 事件接收
+- GitHub App 已订阅并送达的仓库事件可按配置自动创建翻译任务
 
 ### 仓库管理
 - 自动同步用户已授权仓库
@@ -111,6 +112,17 @@
 - 受保护页面是否存在 `session` cookie 的轻量检查
 
 页面和 API 内部再用 `getSession()` 做完整校验。
+
+## Webhook 自动触发说明
+
+当前 webhook 自动触发模型：
+1. GitHub App 使用单个 App 级 webhook 接收事件
+2. `installation` 和 `installation_repositories` 只用于安装同步
+3. 其他带仓库上下文的已送达事件，会按仓库配置判断是否自动创建翻译任务
+4. `push` 事件仅默认分支可触发自动翻译
+5. 仓库配置页中的“自动触发 / 仅手动运行”决定收到事件后是否真正创建任务
+
+> 当前不需要在每个仓库里单独配置 webhook URL。
 
 ## 重要 API
 

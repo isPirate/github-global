@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/db/prisma'
-import { deleteRepositoryWebhook } from '@/lib/github-app'
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -19,9 +18,6 @@ export async function DELETE(
     // Get repository
     const repository = await prisma.repository.findUnique({
       where: { id },
-      include: {
-        installation: true,
-      },
     })
 
     if (!repository) {
@@ -30,22 +26,6 @@ export async function DELETE(
 
     if (repository.userId !== session.user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    // Delete webhook if exists
-    if (repository.webhookId && repository.installation) {
-      try {
-        const [owner, repoName] = repository.fullName.split('/')
-        await deleteRepositoryWebhook(
-          Number(repository.installation.installationId),
-          owner,
-          repoName,
-          repository.webhookId
-        )
-      } catch (error) {
-        console.error('[API] Failed to delete webhook:', error)
-        // Continue with deletion
-      }
     }
 
     // Delete repository (cascade will handle related records)

@@ -5,7 +5,6 @@
 
 import { createAppAuth } from '@octokit/auth-app'
 import { Octokit } from 'octokit'
-import { getGitHubAppWebhookUrl } from '@/lib/config/app'
 
 export interface GitHubAppConfig {
   appId: number
@@ -134,50 +133,4 @@ export async function getRepositoryDetails(
   })
 
   return response.data as unknown as GitHubRepository
-}
-
-/**
- * Create a webhook for a repository
- */
-export async function createRepositoryWebhook(
-  installationId: number,
-  owner: string,
-  repoName: string,
-  webhookSecret: string
-): Promise<string> {
-  const client = await createInstallationClient(installationId)
-
-  const response = await client.rest.repos.createWebhook({
-    owner,
-    repo: repoName,
-    name: 'web',
-    config: {
-      url: getGitHubAppWebhookUrl(),
-      content_type: 'json',
-      secret: webhookSecret,
-      insecure_ssl: '0',
-    },
-    events: ['push', 'pull_request'],
-    active: true,
-  })
-
-  return response.data.id.toString()
-}
-
-/**
- * Delete a webhook
- */
-export async function deleteRepositoryWebhook(
-  installationId: number,
-  owner: string,
-  repoName: string,
-  webhookId: string
-): Promise<void> {
-  const client = await createInstallationClient(installationId)
-
-  await client.rest.repos.deleteWebhook({
-    owner,
-    repo: repoName,
-    hook_id: parseInt(webhookId),
-  })
 }

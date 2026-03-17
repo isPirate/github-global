@@ -74,13 +74,13 @@ interface RepositoryConfigClientPageProps {
 const RUN_MODES = [
   {
     value: 'webhook',
-    label: '自动运行',
-    description: '仓库支持自动触发时，提交变更后可自动创建翻译任务。',
+    label: '自动触发',
+    description: '对 GitHub App 已订阅并送达的仓库事件自动创建翻译任务。',
   },
   {
     value: 'manual',
     label: '仅手动运行',
-    description: '只有你点击“立即翻译”时才会创建任务，更适合先试运行。',
+    description: '即使 GitHub 收到事件，也只有你点击“立即翻译”时才会创建任务。',
   },
 ] as const
 
@@ -708,8 +708,8 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
 
         <section className="overflow-hidden rounded-2xl border bg-card">
           <div className="border-b bg-muted/30 px-6 py-4">
-            <h2 className="text-lg font-semibold">3. 运行方式</h2>
-            <p className="mt-1 text-sm text-muted-foreground">这里只有一个问题：是自动跑，还是你手动点按钮时再跑。</p>
+          <h2 className="text-lg font-semibold">3. 运行方式</h2>
+          <p className="mt-1 text-sm text-muted-foreground">这里只决定收到 GitHub App 事件后是否自动处理；具体订阅哪些事件，请到 GitHub App 后台配置。</p>
           </div>
           <div className="space-y-3 p-6">
             {RUN_MODES.map((mode) => {
