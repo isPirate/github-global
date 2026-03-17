@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/db/prisma'
 import { getEncryptionService } from '@/lib/crypto/encryption'
 import {
+  DEFAULT_SCOPE_MODE,
   inferScopeMode,
   normalizeBaseLanguage,
   resolveExcludePatterns,
@@ -39,6 +40,11 @@ export async function GET(
       include: {
         config: true,
         engines: true,
+        user: {
+          include: {
+            settings: true,
+          },
+        },
       },
     })
 
@@ -53,6 +59,7 @@ export async function GET(
       isActive: engine.isActive,
       hasApiKey: !!engine.encryptedApiKey,
     }))
+    const hasUserOpenRouterKey = !!repository.user?.settings?.encryptedOpenRouterKey
 
     const normalizedConfig = repository.config
       ? (() => {
@@ -68,11 +75,22 @@ export async function GET(
             excludePatterns: resolveExcludePatterns(scopeMode, repository.config.excludePatterns),
           }
         })()
-      : null
+      : {
+          baseLanguage: 'auto',
+          targetLanguages: sanitizeTargetLanguages('auto', repository.user?.settings?.defaultTargetLanguages),
+          scopeMode: DEFAULT_SCOPE_MODE,
+          selectedFiles: [],
+          filePatterns: resolveFilePatterns(DEFAULT_SCOPE_MODE, []),
+          excludePatterns: [],
+          triggerMode: 'webhook',
+        }
 
     return NextResponse.json({
       config: normalizedConfig,
       engines,
+      userSettings: {
+        hasOpenRouterKey: hasUserOpenRouterKey,
+      },
       repository: {
         id: repository.id,
         name: repository.name,
@@ -108,6 +126,13 @@ export async function POST(
       where: {
         id: repositoryId,
         userId: session.user.id,
+      },
+      include: {
+        user: {
+          include: {
+            settings: true,
+          },
+        },
       },
     })
 
@@ -171,9 +196,11 @@ export async function POST(
       )
     }
 
-    if (!engine.id && !engine.apiKey) {
+    const hasUserOpenRouterKey = !!repository.user?.settings?.encryptedOpenRouterKey
+
+    if (!engine.id && !engine.apiKey && !hasUserOpenRouterKey) {
       return NextResponse.json(
-        { error: 'API Key is required for new translation engine' },
+        { error: 'API Key is required for new translation engine unless a global OpenRouter API key is configured in Settings' },
         { status: 400 }
       )
     }
@@ -225,7 +252,7 @@ export async function POST(
         data: {
           repositoryId,
           engineType: engine.engineType || 'openrouter',
-          encryptedApiKey: encryptionService.encrypt(engine.apiKey!),
+          encryptedApiKey: engine.apiKey ? encryptionService.encrypt(engine.apiKey) : '',
           config: engine.config || { model: 'openai/gpt-4-turbo', temperature: 0.3 },
           isActive: engine.isActive !== undefined ? engine.isActive : true,
         },
@@ -239,7 +266,7 @@ export async function POST(
         engineType: translationEngine.engineType,
         config: translationEngine.config,
         isActive: translationEngine.isActive,
-        hasApiKey: true,
+        hasApiKey: !!translationEngine.encryptedApiKey,
       },
     })
   } catch (error) {

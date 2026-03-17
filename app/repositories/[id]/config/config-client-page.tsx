@@ -151,6 +151,7 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
   const [advancedOpen, setAdvancedOpen] = useState(false)
   const [showCustomModelInput, setShowCustomModelInput] = useState(false)
   const [openRouterModels, setOpenRouterModels] = useState<OpenRouterModel[]>([])
+  const [hasUserOpenRouterKey, setHasUserOpenRouterKey] = useState(false)
 
   const [repository, setRepository] = useState<Repository | null>(null)
   const [config, setConfig] = useState<TranslationConfig>(buildDefaultConfig())
@@ -308,6 +309,7 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
         : buildDefaultConfig()
 
       setConfig(nextConfig)
+      setHasUserOpenRouterKey(Boolean(data.userSettings?.hasOpenRouterKey))
 
       if (data.engines && data.engines.length > 0) {
         const activeEngine = data.engines.find((item: TranslationEngine) => item.isActive) || data.engines[0]
@@ -376,10 +378,10 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
         return
       }
 
-      if (!apiKey && !engine.hasApiKey) {
+      if (!apiKey && !engine.hasApiKey && !hasUserOpenRouterKey) {
         toast({
           title: '校验失败',
-          description: '请输入翻译引擎的 API Key',
+          description: '请输入仓库级 API Key，或先在 Settings 里配置用户级 OpenRouter API Key',
           variant: 'warning',
         })
         return
@@ -760,16 +762,33 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">API Key {engine.hasApiKey ? '（已配置）' : ''}</label>
+              <label className="text-sm font-medium">
+                API Key
+                {engine.hasApiKey
+                  ? '（仓库级已配置）'
+                  : hasUserOpenRouterKey
+                    ? '（将使用用户级 Key）'
+                    : ''}
+              </label>
               <input
                 type="password"
                 value={apiKey}
                 onChange={(event) => setApiKey(event.target.value)}
-                placeholder={engine.hasApiKey ? '留空以继续使用当前 API Key' : '输入 API Key'}
+                placeholder={
+                  engine.hasApiKey
+                    ? '留空以继续使用当前仓库级 API Key'
+                    : hasUserOpenRouterKey
+                      ? '可留空，保存后将使用用户级 OpenRouter API Key'
+                      : '输入仓库级 API Key'
+                }
                 className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-primary"
               />
               <p className="text-xs text-muted-foreground">
-                {engine.engineType === 'openrouter' ? '支持后续灵活切换更多模型。' : '适合已经有 OpenAI Key 的团队直接接入。'}
+                {engine.engineType === 'openrouter'
+                  ? hasUserOpenRouterKey
+                    ? '当前已配置用户级 OpenRouter Key，仓库级 Key 可留空。'
+                    : '支持后续灵活切换更多模型。'
+                  : '适合已经有 OpenAI Key 的团队直接接入。'}
               </p>
             </div>
 

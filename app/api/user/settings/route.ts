@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/db/prisma'
 import { getEncryptionService } from '@/lib/crypto/encryption'
+import { sanitizeTargetLanguages } from '@/lib/repository-config'
 
 // GET /api/user/settings - Get user settings
 export async function GET() {
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
     } = {}
 
     if (body.defaultTargetLanguages !== undefined) {
-      updateData.defaultTargetLanguages = body.defaultTargetLanguages
+      updateData.defaultTargetLanguages = sanitizeTargetLanguages('auto', body.defaultTargetLanguages)
     }
     if (body.autoCreatePr !== undefined) {
       updateData.autoCreatePr = body.autoCreatePr
