@@ -564,7 +564,7 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
       </nav>
 
       <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-2">
+        <div className="min-w-0 flex-1 space-y-2">
           <h1 className="text-3xl font-bold">{repository?.name || 'Repository'} 翻译配置</h1>
           <p className="max-w-2xl text-muted-foreground">
             先选语言和要翻译的内容，再决定是自动运行还是手动启动。默认配置已经尽量适合开箱即用。
@@ -576,14 +576,14 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap lg:justify-end lg:self-start">
           {repository?.isActive ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1.5 text-sm text-green-600">
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-green-50 px-3 py-1.5 text-sm text-green-600">
               <span className="h-2 w-2 rounded-full bg-green-600" />
               已启用
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-sm text-muted-foreground">
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-sm text-muted-foreground">
               <span className="h-2 w-2 rounded-full bg-muted-foreground" />
               未启用
             </span>
@@ -593,7 +593,7 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
             type="button"
             onClick={handleTranslateNow}
             disabled={translating || !repository?.isActive}
-            className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {translating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
             立即翻译
@@ -603,7 +603,7 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
             type="button"
             onClick={handleToggleActive}
             disabled={togglingActive}
-            className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg border px-4 py-2 text-sm transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
           >
             {togglingActive ? (
               <Loader2 className="h-4 w-4 animate-spin" />
