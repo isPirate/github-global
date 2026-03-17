@@ -91,6 +91,7 @@ docs/
 - 提高页面刷新、轮询、搜索、表单回填的稳定性
 - 优化 app shell、侧边栏、顶部操作区的一致性
 - 继续收敛仓库配置页的大型客户端逻辑，推动“预设范围 + 手动选文件”的开箱即用配置体验
+- 当前本地分支还包含一轮尚未推远程的配置页下拉交互优化与用户级 Key 回退逻辑，排查相关问题时要优先参考本地代码而不是只看远程状态
 
 ## 重要约定
 - GitHub App ID：`2890267`
@@ -145,6 +146,7 @@ npx prisma migrate resolve --applied <name>
 - `docs/API接口文档.md`
 - `app/api/**/route.ts`
 - 相关页面下的 client page 和调用组件
+- 与用户偏好相关的逻辑还要检查 `app/api/user/settings/route.ts` 和仓库配置接口之间是否已接通
 
 ### 修改数据库
 - `prisma/schema.prisma`
@@ -183,3 +185,6 @@ npx prisma migrate resolve --applied <name>
 - 仓库配置页、仓库列表页、任务列表页是当前最容易出现交互性 Bug 的区域。
 - 当前部分接口的鉴权风格仍不完全统一，尤其是 GitHub App 相关接口，后续修改时要留意一致性。
 - `GET /api/openrouter/models` 依赖外部网络，异常时会返回空模型数组和 500。
+- 新仓库如果还没有仓库级配置，目标语言默认值来自用户偏好设置里的 `defaultTargetLanguages`。
+- 仓库配置保存时，如果用户已在 Settings 配置全局 OpenRouter Key，仓库级 Key 可以留空；翻译执行时会优先尝试仓库级 Key，再回退到用户级 Key。
+- OpenRouter 模型选择当前只使用接口实时返回的数据；如果历史配置里的模型 ID 不在最新列表中，页面会以自定义模型的形式继续显示，避免配置“消失”。

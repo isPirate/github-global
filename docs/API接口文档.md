@@ -1,6 +1,6 @@
 ﻿# GitHub Global API 接口文档
 
-更新时间：2026-03-15
+更新时间：2026-03-17
 
 本文档基于当前仓库 `app/api/**/route.ts` 源码整理，用于后续联调、排障和页面开发时快速查阅。
 
@@ -206,9 +206,12 @@
 - 成功返回字段：
   - `config`
   - `engines`
+  - `userSettings.hasOpenRouterKey`
   - `repository`
 - `engines` 中不会返回完整 API Key，只会返回 `hasApiKey`
 - `config` 当前会返回已归一化的 `baseLanguage`、`targetLanguages`、`scopeMode`、`selectedFiles`，以及与当前 scope 对应的 `filePatterns` / `excludePatterns`
+- 若仓库还没有保存过配置，接口会返回一份“默认配置”，其中 `targetLanguages` 会优先取当前用户设置里的 `defaultTargetLanguages`
+- `userSettings.hasOpenRouterKey` 用于前端判断当前是否可以在不填写仓库级 Key 的情况下继续保存配置
 
 ### `POST /api/repositories/[id]/config`
 
@@ -231,7 +234,7 @@
 - `engine` 字段：
   - `id`：已有引擎时用于更新
   - `engineType`
-  - `apiKey`：新建引擎时必填；更新旧引擎时可省略以保留原 key
+  - `apiKey`：新建引擎时通常必填；若用户已在 Settings 配置全局 OpenRouter Key，则允许留空并在运行时回退使用用户级 key
   - `config`
   - `isActive`
 - 成功返回字段：
@@ -241,7 +244,7 @@
   - `400` `targetLanguages` 或 `filePatterns` 不合法
   - `400` `manual_selection` 模式下未提供 `selectedFiles`
   - `400` 缺少引擎配置
-  - `400` 新引擎缺少 `apiKey`
+  - `400` 新引擎缺少 `apiKey` 且用户级 OpenRouter Key 也未配置
   - `404` 仓库不存在
 
 ### `POST /api/repositories/[id]/enable`
@@ -401,6 +404,7 @@
 - 说明：
   - `openRouterKey` 会在服务端加密后存储
   - 传空值会清空已存储 key
+  - `defaultTargetLanguages` 会在服务端做去重和清洗，并作为新仓库配置页的默认目标语言来源
 - 成功返回字段：
   - `success`
   - `settings`
@@ -545,3 +549,4 @@
 - 当前接口文档是按源码整理，不代表每个接口都已经对外稳定承诺。
 - `GET /api/github-app/installations` 和 `POST /api/github-app/auto-sync` 读取 session 的方式与其他接口略有不同，后续如果要统一鉴权风格，可以优先收敛这两处。
 - `GET /api/openrouter/models` 依赖外部网络，离线或第三方异常时会返回 `500` 和空模型数组。
+- 当前本地下拉列表交互已统一为弹层式长列表选择器，支持键盘输入定位和打开时滚动到选中项；这属于前端交互改动，不影响接口协议本身。
