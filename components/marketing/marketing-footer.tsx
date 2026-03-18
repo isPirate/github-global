@@ -1,4 +1,4 @@
-import Link from "next/link"
+/* eslint-disable @next/next/no-html-link-for-pages */
 import { Globe2 } from "lucide-react"
 
 const footerLinks = [
@@ -31,13 +31,13 @@ export function MarketingFooter() {
 
         <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm">
           {footerLinks.map((item) => (
-            <Link
+            <a
               key={item.href}
               href={item.href}
               className="text-slate-300 hover:text-white"
             >
               {item.label}
-            </Link>
+            </a>
           ))}
         </div>
       </div>

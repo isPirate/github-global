@@ -1,4 +1,3 @@
-import Link from "next/link"
 import {
   ArrowRight,
   CheckCircle2,
@@ -43,10 +42,10 @@ export function HeroSection() {
 
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button asChild size="lg" className="gap-2">
-              <Link href="/api/auth/signin">
+              <a href="/api/auth/signin">
                 使用 GitHub 登录
                 <ArrowRight className="h-4 w-4" />
-              </Link>
+              </a>
             </Button>
             <Button asChild size="lg" variant="outline" className="gap-2">
               <a href="#workflow">

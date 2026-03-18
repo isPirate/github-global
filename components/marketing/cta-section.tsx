@@ -1,4 +1,4 @@
-import Link from "next/link"
+/* eslint-disable @next/next/no-html-link-for-pages */
 import { ArrowRight, Github } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -23,14 +23,14 @@ export function CtaSection() {
 
             <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
               <Button asChild size="lg" className="gap-2">
-                <Link href="/api/auth/signin">
+                <a href="/api/auth/signin">
                   <Github className="h-4 w-4" />
                   进入控制台
                   <ArrowRight className="h-4 w-4" />
-                </Link>
+                </a>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <Link href="/repositories">查看仓库入口</Link>
+                <a href="/repositories">查看仓库入口</a>
               </Button>
             </div>
           </div>
