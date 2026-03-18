@@ -91,7 +91,7 @@ docs/
 - 提高页面刷新、轮询、搜索、表单回填的稳定性
 - 优化 app shell、侧边栏、顶部操作区的一致性
 - 继续收敛仓库配置页的大型客户端逻辑，推动“预设范围 + 手动选文件”的开箱即用配置体验
-- 当前本地分支还包含一轮尚未推远程的 webhook 自动触发重构：统一改为 GitHub App 单 webhook、移除仓库级 webhook 遗留、支持按 GitHub App 已订阅并送达的仓库事件自动创建任务，排查相关问题时要优先参考本地代码而不是只看远程状态
+- 当前代码已经完成一轮 webhook 自动触发重构：统一改为 GitHub App 单 webhook、移除仓库级 webhook 遗留、支持按 GitHub App 已订阅并送达的仓库事件自动创建任务；排查相关问题时应优先参考当前仓库代码和最新文档
 
 ## 重要约定
 - GitHub App ID：`2890267`
@@ -100,6 +100,7 @@ docs/
 - 若通过 ngrok 域名访问，`GITHUB_OAUTH_CALLBACK_URL` 必须与 GitHub OAuth App 后台配置完全一致
 - 当前环境变量以 `APP_BASE_URL`、`GITHUB_APP_WEBHOOK_URL`、`GITHUB_APP_SLUG` 为准，不再使用旧的 `APP_URL`、`GITHUB_APP_NAME`、`NEXTAUTH_*`
 - 当前仓库约定 `.env.local` 保存完整应用配置，根目录 `.env` 仅保留 `DATABASE_URL` 供 Prisma CLI 使用
+- 核实中文文档、注释或 schema 是否乱码时，必须先使用 UTF-8 显式读取文件内容再判断；不要仅凭终端默认编码下的显示结果认定文件本身存在乱码
 - Webhook 必须验证签名
 - OpenRouter API Key 必须加密存储
 

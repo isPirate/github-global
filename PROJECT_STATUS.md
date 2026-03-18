@@ -75,9 +75,11 @@
 - 用户级 OpenRouter Key 可作为仓库级 Key 的回退来源
 - 退出登录
 
-## 本地领先远程的最新提交
+## 最近关键提交
 
-当前本地分支 `main` 相比 `origin/main` 领先 5 个提交，主要包括：
+最近一轮已合入的关键提交主要包括：
+- `b8af16a`：统一 GitHub App webhook 自动触发流程，移除仓库级 webhook 遗留并补齐相关迁移与文档
+- `3014191`：统一环境变量命名，收敛为 `APP_BASE_URL`、`GITHUB_APP_WEBHOOK_URL`、`GITHUB_APP_SLUG`
 - `795a9b9`：优化仓库配置里的下拉列表 UI
 - `115385d`：统一下拉列表 UI
 - `e0608c3`：调整组件布局和样式，修复操作区被内容挤压的问题
