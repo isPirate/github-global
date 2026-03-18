@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -10,14 +10,12 @@ interface TopHeaderProps {
     avatarUrl?: string | null
   }
   onMenuClick?: () => void
-  notificationCount?: number
   className?: string
 }
 
 export function TopHeader({
   user,
   onMenuClick,
-  notificationCount = 0,
   className,
 }: TopHeaderProps) {
   return (
@@ -44,7 +42,7 @@ export function TopHeader({
           </p>
         </div>
 
-        <HeaderActions user={user} notificationCount={notificationCount} />
+        <HeaderActions user={user} />
       </div>
     </header>
   )

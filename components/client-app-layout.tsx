@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
 import { Sidebar } from '@/components/sidebar/sidebar'
@@ -140,7 +140,6 @@ export default function ClientAppLayout({
           <TopHeader
             user={user}
             onMenuClick={() => setSidebarOpen(true)}
-            notificationCount={processingTaskCount}
           />
 
           <main className="flex-1 pb-24 lg:pb-8">
