@@ -107,7 +107,7 @@ export function HeroSection() {
                     <div className="flex items-center justify-between text-sm">
                       <span className="inline-flex items-center gap-2">
                         <GitPullRequest className="h-4 w-4" />
-                        自动创建 PR
+                        生成翻译 PR
                       </span>
                       <span className="text-slate-300">启用</span>
                     </div>

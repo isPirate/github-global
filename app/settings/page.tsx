@@ -40,9 +40,6 @@ export default async function SettingsPage() {
 
   const initialSettings = {
     defaultTargetLanguages: settings.defaultTargetLanguages as string[],
-    autoCreatePr: settings.autoCreatePr,
-    saveTranslationHistory: settings.saveTranslationHistory,
-    emailNotifications: settings.emailNotifications,
     hasOpenRouterKey: !!settings.encryptedOpenRouterKey,
   }
 

@@ -27,9 +27,6 @@ export async function GET() {
     return NextResponse.json({
       settings: {
         defaultTargetLanguages: settings.defaultTargetLanguages,
-        autoCreatePr: settings.autoCreatePr,
-        saveTranslationHistory: settings.saveTranslationHistory,
-        emailNotifications: settings.emailNotifications,
         hasOpenRouterKey: !!settings.encryptedOpenRouterKey,
       },
     })
@@ -56,23 +53,11 @@ export async function POST(request: NextRequest) {
     // Prepare update data
     const updateData: {
       defaultTargetLanguages?: string[]
-      autoCreatePr?: boolean
-      saveTranslationHistory?: boolean
-      emailNotifications?: boolean
       encryptedOpenRouterKey?: string | null
     } = {}
 
     if (body.defaultTargetLanguages !== undefined) {
       updateData.defaultTargetLanguages = sanitizeTargetLanguages('auto', body.defaultTargetLanguages)
-    }
-    if (body.autoCreatePr !== undefined) {
-      updateData.autoCreatePr = body.autoCreatePr
-    }
-    if (body.saveTranslationHistory !== undefined) {
-      updateData.saveTranslationHistory = body.saveTranslationHistory
-    }
-    if (body.emailNotifications !== undefined) {
-      updateData.emailNotifications = body.emailNotifications
     }
 
     // Handle API key with encryption
@@ -98,9 +83,6 @@ export async function POST(request: NextRequest) {
       success: true,
       settings: {
         defaultTargetLanguages: settings.defaultTargetLanguages,
-        autoCreatePr: settings.autoCreatePr,
-        saveTranslationHistory: settings.saveTranslationHistory,
-        emailNotifications: settings.emailNotifications,
         hasOpenRouterKey: !!settings.encryptedOpenRouterKey,
       },
     })

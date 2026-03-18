@@ -386,9 +386,6 @@
 - 作用：获取当前用户设置；如果还没有设置记录，会自动创建默认值
 - 成功返回字段：
   - `settings.defaultTargetLanguages`
-  - `settings.autoCreatePr`
-  - `settings.saveTranslationHistory`
-  - `settings.emailNotifications`
   - `settings.hasOpenRouterKey`
 
 ### `POST /api/user/settings`
@@ -397,14 +394,12 @@
 - 作用：更新当前用户设置
 - 请求体可选字段：
   - `defaultTargetLanguages`
-  - `autoCreatePr`
-  - `saveTranslationHistory`
-  - `emailNotifications`
   - `openRouterKey`
 - 说明：
   - `openRouterKey` 会在服务端加密后存储
   - 传空值会清空已存储 key
   - `defaultTargetLanguages` 会在服务端做去重和清洗，并作为新仓库配置页的默认目标语言来源
+  - 翻译任务当前默认创建分支并自动提交 PR，同时保留任务历史；这些行为不再作为用户偏好设置暴露
 - 成功返回字段：
   - `success`
   - `settings`

@@ -10,9 +10,6 @@ import DangerZoneSection from './danger-zone-section'
 
 export interface UserSettings {
   defaultTargetLanguages: string[]
-  autoCreatePr: boolean
-  saveTranslationHistory: boolean
-  emailNotifications: boolean
   hasOpenRouterKey: boolean
 }
 
@@ -63,9 +60,6 @@ export default function SettingsForm({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           defaultTargetLanguages: settings.defaultTargetLanguages,
-          autoCreatePr: settings.autoCreatePr,
-          saveTranslationHistory: settings.saveTranslationHistory,
-          emailNotifications: settings.emailNotifications,
         }),
       })
 
