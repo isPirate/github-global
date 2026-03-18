@@ -4,25 +4,25 @@
 
 GitHub Global 是一个基于 Next.js 的 GitHub 仓库自动化翻译平台。当前实现采用：
 
-- GitHub OAuth 进行用户登录
+- GitHub App user authorization 进行用户登录
 - GitHub App 进行仓库访问和 PR 操作
 - OpenRouter 作为翻译模型网关
 - Prisma + MySQL 存储用户、仓库、任务和配置数据
 
 ## 当前产品形态
 
-- 首页：营销落地页，登录入口直接跳转 GitHub OAuth
+- 首页：营销落地页，登录入口直接跳转 GitHub 登录
 - Dashboard：登录后总览页
 - Repositories：仓库列表、同步、配置、快速翻译
 - Tasks：任务列表、状态筛选、搜索、失败重试
 - Settings：账户、GitHub App、OpenRouter Key、偏好设置
 
 > 当前正常登录路径不再经过 `/login` 页面。
-> 请直接从首页 CTA 或 `/api/auth/signin` 进入 GitHub OAuth。
+> 请直接从首页 CTA 或 `/api/auth/signin` 进入 GitHub 登录。
 
 ## 核心能力
 
-- GitHub OAuth 登录
+- GitHub App 登录
 - GitHub App 安装与仓库同步
 - 仓库级翻译配置
 - 预设范围 + 手动选文件的内容筛选
@@ -49,7 +49,6 @@ GitHub Global 是一个基于 Next.js 的 GitHub 仓库自动化翻译平台。�
 - MySQL
 
 ### 集成
-- GitHub OAuth
 - GitHub App
 - OpenRouter
 - p-queue
@@ -82,11 +81,10 @@ Set-Content .env 'DATABASE_URL="mysql://root:password@localhost:3306/github_glob
 DATABASE_URL="mysql://root:password@localhost:3306/github_global"
 ENCRYPTION_KEY="your-64-char-hex-key"
 
-GITHUB_CLIENT_ID="your_github_oauth_client_id"
-GITHUB_CLIENT_SECRET="your_github_oauth_client_secret"
-GITHUB_OAUTH_CALLBACK_URL="http://localhost:3000/api/auth/callback"
-
 GITHUB_APP_ID="your_github_app_id"
+GITHUB_APP_CLIENT_ID="Iv1.1234567890abcdef"
+GITHUB_APP_CLIENT_SECRET="your_github_app_client_secret"
+GITHUB_APP_USER_CALLBACK_URL="http://localhost:3000/api/auth/callback"
 GITHUB_APP_SLUG="your_github_app_slug"
 GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
 GITHUB_APP_WEBHOOK_SECRET="your_webhook_secret"
@@ -127,7 +125,7 @@ http://localhost:3000
 
 1. 打开首页 `/`
 2. 点击“使用 GitHub 登录”
-3. 完成 GitHub OAuth 授权
+3. 完成 GitHub 登录授权
 4. 系统跳转到 `/dashboard`
 5. 在仓库页安装并同步 GitHub App 仓库权限
 6. 配置翻译规则并发起翻译任务
@@ -183,7 +181,7 @@ npm run db:studio
 
 - 不要把 `.env`、`.env.local`、私钥文件提交到仓库
 - 不要把真实 Client Secret、Webhook Secret、数据库密码写入文档
-- OAuth 回调地址必须与 `GITHUB_OAUTH_CALLBACK_URL` 以及 GitHub OAuth App 后台配置完全一致
+- GitHub App 的用户授权回调地址必须与 `GITHUB_APP_USER_CALLBACK_URL` 以及 GitHub App 后台配置完全一致
 
 ## 当前状态
 

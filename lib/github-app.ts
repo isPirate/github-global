@@ -53,7 +53,7 @@ export async function createInstallationClient(installationId: number): Promise<
 }
 
 /**
- * Create an authenticated Octokit instance for a user (using OAuth token)
+ * Create an authenticated Octokit instance for a user using a GitHub App user access token.
  */
 export function createUserClient(accessToken: string): Octokit {
   return new Octokit({

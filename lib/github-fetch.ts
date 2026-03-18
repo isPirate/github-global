@@ -20,6 +20,9 @@ export interface GitHubTokenResponse {
   access_token: string
   token_type: string
   scope: string
+  expires_in?: number
+  refresh_token?: string
+  refresh_token_expires_in?: number
 }
 
 export interface GitHubUser {
@@ -85,19 +88,26 @@ function makeRequest(
 }
 
 /**
- * Exchange OAuth code for access token
+ * Exchange GitHub authorization code for a GitHub App user access token
  */
 export async function exchangeCodeForToken(
   code: string,
   clientId: string,
-  clientSecret: string
+  clientSecret: string,
+  redirectUri?: string
 ): Promise<GitHubTokenResponse> {
   const url = 'https://github.com/login/oauth/access_token'
-  const body = new URLSearchParams({
+  const params = new URLSearchParams({
     client_id: clientId,
     client_secret: clientSecret,
     code,
-  }).toString()
+  })
+
+  if (redirectUri) {
+    params.set('redirect_uri', redirectUri)
+  }
+
+  const body = params.toString()
 
   try {
     const { data, statusCode } = await makeRequest(url, {
@@ -123,6 +133,47 @@ export async function exchangeCodeForToken(
     return result
   } catch (error) {
     console.error('[GitHubFetch] Token exchange failed:', error)
+    throw error
+  }
+}
+
+export async function refreshUserAccessToken(
+  refreshToken: string,
+  clientId: string,
+  clientSecret: string
+): Promise<GitHubTokenResponse> {
+  const url = 'https://github.com/login/oauth/access_token'
+  const body = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken,
+  }).toString()
+
+  try {
+    const { data, statusCode } = await makeRequest(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
+        'User-Agent': 'GitHub-Global-App',
+      },
+      body,
+    })
+
+    if (statusCode !== 200) {
+      throw new Error(`Token refresh failed: ${statusCode} ${data}`)
+    }
+
+    const result = JSON.parse(data)
+
+    if (result.error) {
+      throw new Error(result.error_description || result.error)
+    }
+
+    return result
+  } catch (error) {
+    console.error('[GitHubFetch] Token refresh failed:', error)
     throw error
   }
 }

@@ -23,7 +23,7 @@ OpenRouter 是一个统一的 AI 模型网关，具有以下优势：
 点击右上角的 **"Sign in"** 按钮。
 
 您可以选择以下方式注册：
-- GitHub OAuth（推荐）
+- GitHub 登录（推荐）
 - Google OAuth
 - 邮箱注册
 
@@ -147,7 +147,7 @@ OpenRouter 支持按使用量付费，您可以先充值再使用。
 ### 5.1 登录应用
 
 1. 启动 GitHub Global 应用
-2. 使用 GitHub OAuth 登录
+2. 使用 GitHub 登录
 3. 进入 Dashboard
 
 ### 5.2 选择仓库

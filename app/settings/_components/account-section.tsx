@@ -39,7 +39,7 @@ export default function AccountSection({ user }: AccountSectionProps) {
         <div className="grid gap-4 border-t border-border/70 pt-4 md:grid-cols-3">
           <div className="rounded-[var(--radius-md)] bg-accent/50 p-4">
             <p className="text-sm text-muted-foreground">登录方式</p>
-            <p className="mt-1 font-medium">GitHub OAuth</p>
+            <p className="mt-1 font-medium">GitHub App 登录</p>
           </div>
           <div className="rounded-[var(--radius-md)] bg-accent/50 p-4">
             <p className="text-sm text-muted-foreground">账户类型</p>

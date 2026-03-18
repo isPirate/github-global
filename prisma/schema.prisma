@@ -17,6 +17,11 @@ model User {
   username          String
   email             String?
   avatarUrl         String?  @map("avatar_url") @db.Text
+  githubUserAccessToken String? @map("github_user_access_token") @db.Text
+  githubUserAccessTokenExpiresAt DateTime? @map("github_user_access_token_expires_at")
+  githubUserRefreshToken String? @map("github_user_refresh_token") @db.Text
+  githubUserRefreshTokenExpiresAt DateTime? @map("github_user_refresh_token_expires_at")
+  githubUserTokenScope String? @map("github_user_token_scope") @db.Text
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 

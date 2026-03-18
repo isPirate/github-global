@@ -33,18 +33,18 @@
 ### `GET /api/auth/signin`
 
 - 鉴权：公开
-- 作用：跳转到 GitHub OAuth 授权页
+- 作用：跳转到 GitHub App 用户授权页
 - 请求参数：无
 - 成功返回：302 重定向到 GitHub
 - 失败返回：
-  - `500` GitHub OAuth 环境变量未配置
+  - `500` GitHub App 用户授权环境变量未配置
 
 ### `GET /api/auth/callback`
 
 - 鉴权：公开
-- 作用：处理 GitHub OAuth 回调，创建或更新用户并写入 session
+- 作用：处理 GitHub App 用户授权回调，创建或更新用户并写入 session
 - Query 参数：
-  - `code`：GitHub OAuth 返回的授权码
+  - `code`：GitHub 返回的用户授权码
   - `error`：GitHub 返回的错误码
   - `error_description`：错误描述
 - 成功返回：302 重定向到 `/dashboard`
@@ -89,7 +89,7 @@
   - `appUrl`
   - `appName`
 - 可能返回：
-  - `401` 未登录或 session 内无 `accessToken`
+  - `401` 未登录或缺少有效 session
   - `500` `GITHUB_APP_ID` 未配置或请求失败
 
 ### `GET /api/github-app/installation-url`
@@ -116,7 +116,7 @@
 ### `POST /api/github-app/sync`
 
 - 鉴权：登录态
-- 作用：通过当前用户 OAuth token 拉取“该用户已安装的当前 GitHub App”，并同步到数据库
+- 作用：通过当前用户的 GitHub App user access token 拉取“该用户已安装的当前 GitHub App”，并同步到数据库
 - 请求体：无
 - 成功返回字段：
   - `success`

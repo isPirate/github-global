@@ -7,6 +7,23 @@ export function getAppBaseUrl() {
   return trimTrailingSlash(value)
 }
 
+export function getGitHubAppClientId() {
+  return process.env.GITHUB_APP_CLIENT_ID?.trim() || ''
+}
+
+export function getGitHubAppClientSecret() {
+  return process.env.GITHUB_APP_CLIENT_SECRET?.trim() || ''
+}
+
+export function getGitHubAppUserCallbackUrl() {
+  const explicitCallbackUrl = process.env.GITHUB_APP_USER_CALLBACK_URL?.trim()
+  if (explicitCallbackUrl) {
+    return trimTrailingSlash(explicitCallbackUrl)
+  }
+
+  return `${getAppBaseUrl()}/api/auth/callback`
+}
+
 export function getGitHubAppSlug() {
   return process.env.GITHUB_APP_SLUG?.trim() || ''
 }

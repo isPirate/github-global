@@ -2,30 +2,32 @@
 
 本指南用于配置 GitHub Global 当前实现所需的两类 GitHub 能力：
 
-1. GitHub OAuth App：用户登录
+1. GitHub App：用户登录（user authorization）
 2. GitHub App：仓库访问、PR 和 Webhook
 
-## 一、GitHub OAuth App（用于登录）
+## 一、GitHub App 用户授权（用于登录）
 
 访问：
-https://github.com/settings/developers
+https://github.com/settings/apps
 
 选择：
-- OAuth Apps
-- New OAuth App
+- 进入当前 GitHub App 设置页
+- 配置用户授权能力与 callback URL
 
 推荐配置：
 
-- Application name: `GitHub Global`
+- GitHub App name: `GitHub Global`
 - Homepage URL: `http://localhost:3000`
-- Authorization callback URL: `http://localhost:3000/api/auth/callback`
+- Callback URL: `http://localhost:3000/api/auth/callback`
+- 开启 `Request user authorization (OAuth) during installation`
+- 开启 `User-to-server token expiration`
 
 保存后，把以下值写入 `.env.local`：
 
 ```env
-GITHUB_CLIENT_ID="your_github_oauth_client_id"
-GITHUB_CLIENT_SECRET="your_github_oauth_client_secret"
-GITHUB_OAUTH_CALLBACK_URL="http://localhost:3000/api/auth/callback"
+GITHUB_APP_CLIENT_ID="Iv1.1234567890abcdef"
+GITHUB_APP_CLIENT_SECRET="your_github_app_client_secret"
+GITHUB_APP_USER_CALLBACK_URL="http://localhost:3000/api/auth/callback"
 ```
 
 > 本地开发统一使用 `localhost`，不要混用 `127.0.0.1`。
@@ -111,7 +113,7 @@ GITHUB_APP_WEBHOOK_URL="http://localhost:3000/api/webhooks/github"
 1. 启动本地服务：`npm run dev`
 2. 打开 `http://localhost:3000`
 3. 点击首页“使用 GitHub 登录”
-4. 完成 GitHub OAuth 登录
+4. 完成 GitHub App 登录
 5. 进入 `/repositories`
 6. 点击 GitHub App 安装 / 权限管理入口
 7. 返回仓库页刷新仓库列表
@@ -122,7 +124,7 @@ GITHUB_APP_WEBHOOK_URL="http://localhost:3000/api/webhooks/github"
 
 ### 验证登录
 
-- 首页 CTA 能跳转到 GitHub OAuth
+- 首页 CTA 能跳转到 GitHub 登录
 - 授权后能回到 `/dashboard`
 
 ### 验证仓库同步
@@ -142,7 +144,7 @@ GITHUB_APP_WEBHOOK_URL="http://localhost:3000/api/webhooks/github"
 
 ### 1. `redirect_uri_mismatch`
 
-检查 OAuth App 的 callback URL 是否为：
+检查 GitHub App 的 callback URL 是否为：
 
 ```text
 http://localhost:3000/api/auth/callback

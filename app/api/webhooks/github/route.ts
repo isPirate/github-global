@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
+import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 import { translationQueue } from '@/lib/translation/queue'
 import { processTranslationTask } from '@/lib/translation/process-task'
@@ -82,13 +83,13 @@ async function syncInstallationEvent(payload: GitHubWebhookPayload) {
         githubAccountId: BigInt(sender.id),
         accountLogin: sender.login,
         accountType,
-        permissions: installation.permissions || {},
+        permissions: (installation.permissions || {}) as Prisma.JsonObject,
         repositorySelection: installation.repository_selection || 'all',
       },
       update: {
         accountLogin: sender.login,
         accountType,
-        permissions: installation.permissions || {},
+        permissions: (installation.permissions || {}) as Prisma.JsonObject,
         repositorySelection: installation.repository_selection || 'all',
       },
     })

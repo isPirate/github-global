@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth/session'
 import { createUserClient } from '@/lib/github-app'
 import { prisma } from '@/lib/db/prisma'
+import { getValidGitHubUserAccessToken } from '@/lib/auth/github-user-token'
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getSession()
 
-    if (!session || !session.user?.accessToken) {
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -30,8 +31,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Use user's OAuth token to get their GitHub App installations
-    const userClient = createUserClient(session.user.accessToken)
+    const userAccessToken = await getValidGitHubUserAccessToken(session.user.id)
+
+    if (!userAccessToken) {
+      return NextResponse.json(
+        { error: 'GitHub App user token is missing or expired' },
+        { status: 401 }
+      )
+    }
+
+    const userClient = createUserClient(userAccessToken)
 
     try {
       // Get all installations for the authenticated user

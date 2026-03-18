@@ -6,7 +6,7 @@ GitHub Global 是一个 GitHub 仓库自动化翻译平台，使用 AI 将仓库
 当前项目已完成一轮前端重构，重点页面已经统一到同一套 app shell 和视觉体系中。当前开发阶段以 Bug 修复、稳定性优化和交互细节打磨为主。
 
 ## 当前产品形态
-- `/`：营销首页，直接引导 GitHub OAuth 登录
+- `/`：营销首页，直接引导 GitHub App 登录
 - `/dashboard`：总览页
 - `/repositories`：仓库列表、同步、配置入口、快速翻译
 - `/repositories/[id]/config`：仓库翻译配置页
@@ -21,7 +21,7 @@ GitHub Global 是一个 GitHub 仓库自动化翻译平台，使用 AI 将仓库
 - React 19
 - Tailwind CSS + shadcn/ui
 - MySQL + Prisma ORM
-- GitHub OAuth（用户登录）
+- GitHub App user authorization（用户登录）
 - GitHub App（仓库访问、Webhook、PR 操作）
 - OpenRouter（翻译模型网关）
 - p-queue（翻译任务队列）
@@ -29,7 +29,7 @@ GitHub Global 是一个 GitHub 仓库自动化翻译平台，使用 AI 将仓库
 ## 核心架构
 
 ### 认证系统（双认证）
-- GitHub OAuth：用户登录，核心在 `lib/auth/session.ts`
+- GitHub App user authorization：用户登录，核心在 `lib/auth/session.ts`
 - GitHub App：仓库读写、Webhook、PR 操作
 
 ### 数据模型（10 个核心表）
@@ -97,7 +97,7 @@ docs/
 - GitHub App ID：`2890267`
 - 数据库：MySQL `github_global`
 - 纯本地开发建议使用 `http://localhost:3000`
-- 若通过 ngrok 域名访问，`GITHUB_OAUTH_CALLBACK_URL` 必须与 GitHub OAuth App 后台配置完全一致
+- 若通过 ngrok 域名访问，`GITHUB_APP_USER_CALLBACK_URL` 必须与 GitHub App 后台配置完全一致
 - 当前环境变量以 `APP_BASE_URL`、`GITHUB_APP_WEBHOOK_URL`、`GITHUB_APP_SLUG` 为准，不再使用旧的 `APP_URL`、`GITHUB_APP_NAME`、`NEXTAUTH_*`
 - 当前仓库约定 `.env.local` 保存完整应用配置，根目录 `.env` 仅保留 `DATABASE_URL` 供 Prisma CLI 使用
 - 核实中文文档、注释或 schema 是否乱码时，必须先使用 UTF-8 显式读取文件内容再判断；不要仅凭终端默认编码下的显示结果认定文件本身存在乱码

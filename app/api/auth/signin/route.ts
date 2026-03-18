@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
+import {
+  getGitHubAppClientId,
+  getGitHubAppUserCallbackUrl,
+} from '@/lib/config/app'
 
 export async function GET(request: NextRequest) {
-  const clientId = process.env.GITHUB_CLIENT_ID
+  const clientId = getGitHubAppClientId()
   const redirectUri =
-    process.env.GITHUB_OAUTH_CALLBACK_URL ||
+    getGitHubAppUserCallbackUrl() ||
     new URL('/api/auth/callback', request.nextUrl.origin).toString()
   const state = Math.random().toString(36).substring(2, 15)
 
   if (!clientId) {
     return NextResponse.json(
-      { error: 'GitHub OAuth environment variables are not configured' },
+      { error: 'GitHub App user authorization environment variables are not configured' },
       { status: 500 }
     )
   }

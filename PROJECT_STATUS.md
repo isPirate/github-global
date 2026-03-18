@@ -7,7 +7,7 @@
 最近一轮更新已完成：
 - 营销首页重构
 - Dashboard / Repositories / Tasks / Settings 重构
-- 登录入口改为首页直达 GitHub OAuth
+- 登录入口改为首页直达 GitHub App 登录
 - `/login` 不再作为正常登录页面
 - 仓库页和任务页改为各自独立搜索
 - 侧边栏支持折叠状态持久化和桌面端宽度调节
@@ -33,9 +33,9 @@
 ## 已完成功能
 
 ### 认证
-- GitHub OAuth 登录
+- GitHub App 登录
 - Session Cookie 管理
-- `/api/auth/callback` 处理 OAuth 回调
+- `/api/auth/callback` 处理 GitHub App 用户授权回调
 - `/api/auth/signout` 退出登录
 - `/api/auth/me` 获取当前用户信息
 
@@ -105,7 +105,7 @@
 1. 用户访问首页 `/`
 2. 点击“使用 GitHub 登录”
 3. 跳转 `/api/auth/signin`
-4. GitHub OAuth 授权
+4. GitHub App 用户授权
 5. 回调 `/api/auth/callback`
 6. 创建 session cookie
 7. 重定向 `/dashboard`
@@ -169,7 +169,7 @@
 
 - 文档中不再保留任何真实密钥、密码或 Secret
 - 纯本地开发建议使用 `http://localhost:3000`
-- 如果通过 ngrok 域名访问，`GITHUB_OAUTH_CALLBACK_URL` 必须与 GitHub OAuth App 后台配置完全一致
+- 如果通过 ngrok 域名访问，`GITHUB_APP_USER_CALLBACK_URL` 必须与 GitHub App 后台配置完全一致
 - GitHub App 安装链接统一以 `GITHUB_APP_SLUG` 为准，Webhook 地址统一以 `GITHUB_APP_WEBHOOK_URL` 为准
 - 根目录 `.env` 仅保留 `DATABASE_URL`，完整应用配置统一维护在 `.env.local`
 - 旧的 `/login` 页面描述、NextAuth.js 描述、过时页面结构均已弃用
