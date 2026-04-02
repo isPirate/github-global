@@ -37,8 +37,6 @@ export function RepositoryEmptyState({
             {installationUrl ? (
               <a
                 href={installationUrl}
-                target="_blank"
-                rel="noreferrer"
                 className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground"
               >
                 安装 GitHub App
@@ -59,8 +57,6 @@ export function RepositoryEmptyState({
         installationUrl ? (
           <a
             href={installationUrl}
-            target="_blank"
-            rel="noreferrer"
             className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground"
           >
             前往 GitHub 调整权限

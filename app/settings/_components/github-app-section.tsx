@@ -85,14 +85,14 @@ export default function GitHubAppSection({ installations }: GitHubAppSectionProp
         <div className="flex flex-wrap gap-3 pt-2">
           {appInfo && (
             <>
-              <a
-                href={appInfo.installationUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-2xl bg-primary px-4 py-2 text-primary-foreground transition-colors hover:bg-primary/90"
-              >
-                {installations.length > 0 ? '添加更多安装' : '安装 GitHub App'}
-              </a>
+              {installations.length === 0 ? (
+                <a
+                  href={appInfo.installationUrl}
+                  className="rounded-2xl bg-primary px-4 py-2 text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  安装 GitHub App
+                </a>
+              ) : null}
               <a
                 href="https://github.com/settings/installations"
                 target="_blank"
