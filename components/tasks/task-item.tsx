@@ -20,6 +20,7 @@ interface TranslationTask {
   id: string
   repositoryId: string
   triggerType: string
+  sourceBranch?: string | null
   status: 'pending' | 'processing' | 'completed' | 'failed'
   totalFiles: number
   processedFiles: number
@@ -76,6 +77,11 @@ export function TaskItem({
               <span className="text-xs text-muted-foreground">
                 {task.triggerType === 'manual' ? '手动触发' : '自动触发'}
               </span>
+              {task.sourceBranch ? (
+                <span className="text-xs text-muted-foreground">
+                  来源分支：{task.sourceBranch}
+                </span>
+              ) : null}
               <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                 {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
                 {expanded ? '收起详情' : '展开详情'}

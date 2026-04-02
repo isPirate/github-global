@@ -210,6 +210,7 @@
   - `repository`
 - `engines` 中不会返回完整 API Key，只会返回 `hasApiKey`
 - `config` 当前会返回已归一化的 `baseLanguage`、`targetLanguages`、`scopeMode`、`selectedFiles`，以及与当前 scope 对应的 `filePatterns` / `excludePatterns`
+- `config` 当前还会返回已清洗的 `watchedBranches`；留空表示回退到仓库默认分支
 - 若仓库还没有保存过配置，接口会返回一份“默认配置”，其中 `targetLanguages` 会优先取当前用户设置里的 `defaultTargetLanguages`
 - `userSettings.hasOpenRouterKey` 用于前端判断当前是否可以在不填写仓库级 Key 的情况下继续保存配置
 
@@ -222,6 +223,7 @@
 - 请求体字段：
   - `baseLanguage`
   - `targetLanguages`：必填，非空数组，且会自动剔除与基准语言相同的值
+  - `watchedBranches`：可选，字符串数组；用于控制自动触发监听哪些分支，留空时回退到仓库默认分支
   - `scopeMode`：`preset_common_docs` / `preset_readme_docs` / `preset_all_markdown` / `manual_selection` / `advanced_rules`
   - `selectedFiles`：手动选文件模式下使用
   - `filePatterns`：仅高级规则模式必填
@@ -243,6 +245,7 @@
 - 可能返回：
   - `400` `targetLanguages` 或 `filePatterns` 不合法
   - `400` `manual_selection` 模式下未提供 `selectedFiles`
+  - `400` `watchedBranches` 中包含 GitHub 上不存在的分支
   - `400` 缺少引擎配置
   - `400` 新引擎缺少 `apiKey` 且用户级 OpenRouter Key 也未配置
   - `404` 仓库不存在
@@ -282,6 +285,7 @@
 {
   "success": true,
   "taskId": "task_id",
+  "sourceBranch": "develop",
   "message": "Translation task created successfully"
 }
 ```
@@ -300,6 +304,7 @@
   - `files`
   - `totalCount`
   - `defaultBranch`
+  - `sourceBranch`
 - `files` 单项字段：
   - `path`
   - `directory`
@@ -308,6 +313,20 @@
 - 说明：
   - 当前优先返回文档类候选文件，如 `README*`、`docs/**`、`*.md`、`*.mdx`、`*.txt`
   - 用于配置页“手动选择文件”模式，不直接创建翻译任务
+
+### `GET /api/repositories/[id]/branches`
+
+- 鉴权：登录态
+- 作用：获取仓库当前可选分支列表，用于配置页的“监听分支”下拉多选
+- 路径参数：
+  - `id`：数据库仓库 ID
+- 成功返回字段：
+  - `branches`
+  - `defaultBranch`
+- 说明：
+  - 分支列表来自 GitHub 当前仓库
+  - 默认分支会优先排在返回结果前面
+  - 配置页留空不选时，运行时仍会回退到默认分支
 
 ### `GET /api/repositories/[id]/translations`
 
@@ -439,9 +458,10 @@
   - 若 action 为 `created` / `added`，写入或更新 installation
   - 若 action 为 `deleted`，删除 installation
   - 对其他带 `repository` 上下文的事件，按仓库配置判断是否自动触发翻译
-  - `push` 事件仅默认分支可触发
+  - `push` 事件会按仓库配置里的 `watchedBranches` 判断是否触发；若留空则回退到默认分支
   - 仅当仓库已启用、已配置、`triggerMode === webhook` 且存在可用引擎时，自动创建 `translationTask`
-  - 对同一 delivery 做幂等；若 payload 含 commit SHA，再按同一仓库同一 commit SHA 去重，避免重复入队
+  - 自动任务会记录本次事件对应的 `sourceBranch`，后续翻译执行和 PR base 都会跟随该分支
+  - 对同一 delivery 做幂等；若 payload 含 commit SHA，再按同一仓库、同一 commit SHA、同一 sourceBranch 去重，避免重复入队
 - 成功返回：
 
 ```json
@@ -510,6 +530,7 @@
   "id": "task_id",
   "repositoryId": "repo_id",
   "triggerType": "manual",
+  "sourceBranch": "develop",
   "status": "pending",
   "totalFiles": 0,
   "processedFiles": 0,
@@ -526,6 +547,7 @@
 {
   "baseLanguage": "auto",
   "targetLanguages": ["zh", "ja"],
+  "watchedBranches": ["main", "develop"],
   "scopeMode": "preset_common_docs",
   "selectedFiles": [],
   "filePatterns": ["README*", "**/README*", "docs/**", "**/*.md", "**/*.mdx"],

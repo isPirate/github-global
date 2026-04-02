@@ -17,6 +17,7 @@ import ClientAppLayout from '@/components/client-app-layout'
 import ContentScopePicker from '@/components/repository/content-scope-picker'
 import LanguageMultiSelect from '@/components/repository/language-multi-select'
 import RepositoryFilePicker from '@/components/repository/repository-file-picker'
+import WatchedBranchSelect from '@/components/repository/watched-branch-select'
 import { useToast } from '@/components/toast/use-toast'
 import SearchableSelect, { type SearchableSelectOption } from '@/components/ui/searchable-select'
 import { GLOBAL_LANGUAGES } from '@/lib/i18n/languages'
@@ -32,6 +33,7 @@ interface TranslationConfig {
   id?: string
   baseLanguage: string
   targetLanguages: string[]
+  watchedBranches: string[]
   scopeMode: ScopeMode
   selectedFiles: string[]
   filePatterns: string[]
@@ -117,6 +119,7 @@ function buildDefaultConfig(): TranslationConfig {
   return {
     baseLanguage: 'auto',
     targetLanguages: [],
+    watchedBranches: [],
     scopeMode: DEFAULT_SCOPE_MODE,
     selectedFiles: [],
     filePatterns: resolveFilePatterns(DEFAULT_SCOPE_MODE, []),
@@ -303,6 +306,7 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
               data.config.baseLanguage || 'auto',
               data.config.targetLanguages || []
             ),
+            watchedBranches: Array.isArray(data.config.watchedBranches) ? data.config.watchedBranches : [],
             selectedFiles: sanitizeSelectedFiles(data.config.selectedFiles || []),
             excludePatterns: Array.isArray(data.config.excludePatterns) ? data.config.excludePatterns : [],
           }
@@ -399,6 +403,7 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
       const payload = {
         baseLanguage: config.baseLanguage,
         targetLanguages: sanitizedLanguages,
+        watchedBranches: config.watchedBranches,
         scopeMode: config.scopeMode,
         selectedFiles: config.selectedFiles,
         filePatterns: config.filePatterns,
@@ -708,7 +713,26 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
 
         <section className="overflow-hidden rounded-2xl border bg-card">
           <div className="border-b bg-muted/30 px-6 py-4">
-          <h2 className="text-lg font-semibold">3. 运行方式</h2>
+            <h2 className="text-lg font-semibold">3. 监听分支</h2>
+            <p className="mt-1 text-sm text-muted-foreground">指定哪些分支参与自动触发；手动翻译和文件列表也会基于这里的主分支工作。</p>
+          </div>
+          <div className="p-6">
+            <WatchedBranchSelect
+              repositoryId={repositoryId}
+              selectedBranches={config.watchedBranches}
+              onChange={(watchedBranches) =>
+                setConfig((prev) => ({
+                  ...prev,
+                  watchedBranches,
+                }))
+              }
+            />
+          </div>
+        </section>
+
+        <section className="overflow-hidden rounded-2xl border bg-card">
+          <div className="border-b bg-muted/30 px-6 py-4">
+            <h2 className="text-lg font-semibold">4. 运行方式</h2>
           <p className="mt-1 text-sm text-muted-foreground">这里只决定收到 GitHub App 事件后是否自动处理；具体订阅哪些事件，请到 GitHub App 后台配置。</p>
           </div>
           <div className="space-y-3 p-6">
@@ -737,7 +761,7 @@ export default function RepositoryConfigClientPage({ initialUser }: RepositoryCo
 
         <section className="overflow-hidden rounded-2xl border bg-card">
           <div className="border-b bg-muted/30 px-6 py-4">
-            <h2 className="text-lg font-semibold">4. 翻译引擎</h2>
+            <h2 className="text-lg font-semibold">5. 翻译引擎</h2>
             <p className="mt-1 text-sm text-muted-foreground">默认只保留必要项，更多调优参数放到高级设置里。</p>
           </div>
           <div className="space-y-5 p-6">

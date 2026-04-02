@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/db/prisma'
 import { translationQueue } from '@/lib/translation/queue'
 import { processTranslationTask } from '@/lib/translation/process-task'
+import { sanitizeWatchedBranches } from '@/lib/repository-config'
 
 type RouteContext = {
   params: Promise<{ id: string }>
@@ -67,11 +68,14 @@ export async function POST(
       )
     }
 
+    const sourceBranch = sanitizeWatchedBranches(repository.config.watchedBranches)[0] || null
+
     // Create a translation task
     const task = await prisma.translationTask.create({
       data: {
         repositoryId: repository.id,
         triggerType: 'manual',
+        ...(sourceBranch ? { sourceBranch } : {}),
         status: 'pending',
         totalFiles: 0,
         processedFiles: 0,
@@ -90,6 +94,7 @@ export async function POST(
     return NextResponse.json({
       success: true,
       taskId: task.id,
+      sourceBranch,
       message: 'Translation task created successfully',
     })
   } catch (error) {

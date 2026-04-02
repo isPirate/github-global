@@ -2,6 +2,7 @@
 import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/db/prisma'
 import { getEncryptionService } from '@/lib/crypto/encryption'
+import { getGitHubAppManager } from '@/lib/github/app'
 import {
   DEFAULT_SCOPE_MODE,
   inferScopeMode,
@@ -10,6 +11,7 @@ import {
   resolveFilePatterns,
   sanitizeSelectedFiles,
   sanitizeTargetLanguages,
+  sanitizeWatchedBranches,
 } from '@/lib/repository-config'
 
 type RouteContext = {
@@ -69,6 +71,7 @@ export async function GET(
             ...repository.config,
             baseLanguage: normalizeBaseLanguage(repository.config.baseLanguage),
             targetLanguages: sanitizeTargetLanguages(repository.config.baseLanguage, repository.config.targetLanguages),
+            watchedBranches: sanitizeWatchedBranches(repository.config.watchedBranches),
             scopeMode,
             selectedFiles: sanitizeSelectedFiles(repository.config.selectedFiles),
             filePatterns: resolveFilePatterns(scopeMode, repository.config.filePatterns),
@@ -78,6 +81,7 @@ export async function GET(
       : {
           baseLanguage: 'auto',
           targetLanguages: sanitizeTargetLanguages('auto', repository.user?.settings?.defaultTargetLanguages),
+          watchedBranches: [],
           scopeMode: DEFAULT_SCOPE_MODE,
           selectedFiles: [],
           filePatterns: resolveFilePatterns(DEFAULT_SCOPE_MODE, []),
@@ -128,6 +132,7 @@ export async function POST(
         userId: session.user.id,
       },
       include: {
+        installation: true,
         user: {
           include: {
             settings: true,
@@ -143,6 +148,7 @@ export async function POST(
     const {
       baseLanguage,
       targetLanguages,
+      watchedBranches,
       scopeMode,
       selectedFiles,
       filePatterns,
@@ -163,6 +169,7 @@ export async function POST(
 
     const normalizedBaseLanguage = normalizeBaseLanguage(baseLanguage)
     const sanitizedTargetLanguages = sanitizeTargetLanguages(normalizedBaseLanguage, targetLanguages)
+    const sanitizedWatchedBranches = sanitizeWatchedBranches(watchedBranches)
     const normalizedScopeMode = inferScopeMode(scopeMode, filePatterns)
     const normalizedSelectedFiles = sanitizeSelectedFiles(selectedFiles)
     const normalizedFilePatterns = resolveFilePatterns(normalizedScopeMode, filePatterns)
@@ -189,6 +196,42 @@ export async function POST(
       )
     }
 
+    if (sanitizedWatchedBranches.length > 0) {
+      if (!repository.installation) {
+        return NextResponse.json(
+          { error: 'Repository installation is required to validate watched branches' },
+          { status: 400 }
+        )
+      }
+
+      const [owner, repo] = repository.fullName.split('/')
+      const appManager = getGitHubAppManager()
+      const octokit = await appManager.getInstallationOctokit(Number(repository.installation.installationId))
+      const missingBranches: string[] = []
+
+      for (const branch of sanitizedWatchedBranches) {
+        try {
+          await octokit.rest.git.getRef({
+            owner,
+            repo,
+            ref: `heads/${branch}`,
+          })
+        } catch {
+          missingBranches.push(branch)
+        }
+      }
+
+      if (missingBranches.length > 0) {
+        return NextResponse.json(
+          {
+            error: `These watched branches do not exist in GitHub: ${missingBranches.join(', ')}`,
+            missingBranches,
+          },
+          { status: 400 }
+        )
+      }
+    }
+
     if (!engine) {
       return NextResponse.json(
         { error: 'Translation engine configuration is required' },
@@ -211,6 +254,7 @@ export async function POST(
         repositoryId,
         baseLanguage: normalizedBaseLanguage,
         targetLanguages: sanitizedTargetLanguages,
+        watchedBranches: sanitizedWatchedBranches,
         scopeMode: normalizedScopeMode,
         selectedFiles: normalizedSelectedFiles,
         filePatterns: normalizedFilePatterns,
@@ -223,6 +267,7 @@ export async function POST(
       update: {
         baseLanguage: normalizedBaseLanguage,
         targetLanguages: sanitizedTargetLanguages,
+        watchedBranches: sanitizedWatchedBranches,
         scopeMode: normalizedScopeMode,
         selectedFiles: normalizedSelectedFiles,
         filePatterns: normalizedFilePatterns,

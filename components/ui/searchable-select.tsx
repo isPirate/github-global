@@ -61,7 +61,10 @@ export default function SearchableSelect({
   }, [value])
 
   const selectedOptions = useMemo(
-    () => options.filter((option) => selectedValues.includes(option.value)),
+    () =>
+      selectedValues
+        .map((selectedValue) => options.find((option) => option.value === selectedValue))
+        .filter((option): option is SearchableSelectOption => Boolean(option)),
     [options, selectedValues]
   )
 
