@@ -15,6 +15,35 @@ interface BranchesResponse {
   defaultBranch: string
 }
 
+function resolveBranchFetchErrorMessage(status: number, data: Record<string, unknown>) {
+  const rawError = typeof data.error === 'string' ? data.error : ''
+  const rawMessage = typeof data.message === 'string' ? data.message : ''
+  const combinedMessage = `${rawError} ${rawMessage}`.toLowerCase()
+
+  if (status === 401) {
+    return '登录状态已失效，请刷新页面或重新登录后再试。'
+  }
+
+  if (status === 404) {
+    return '未找到当前仓库，请返回仓库列表刷新后再试。'
+  }
+
+  if (status === 400 && rawError.includes('installation')) {
+    return '当前仓库的 GitHub App 安装信息异常，请先同步仓库后再试。'
+  }
+
+  if (
+    combinedMessage.includes('econnreset') ||
+    combinedMessage.includes('etimedout') ||
+    combinedMessage.includes('network') ||
+    combinedMessage.includes('socket hang up')
+  ) {
+    return '获取仓库分支失败，可能是网络波动或 GitHub 暂时不可用，请稍后重试。'
+  }
+
+  return '获取仓库分支失败，请稍后重试。'
+}
+
 export default function WatchedBranchSelect({
   repositoryId,
   selectedBranches,
@@ -34,10 +63,10 @@ export default function WatchedBranchSelect({
         setError(null)
 
         const response = await fetch(`/api/repositories/${repositoryId}/branches`)
-        const data: Partial<BranchesResponse> = await response.json().catch(() => ({}))
+        const data = (await response.json().catch(() => ({}))) as Partial<BranchesResponse> & Record<string, unknown>
 
         if (!response.ok) {
-          throw new Error(data && 'error' in data && typeof data.error === 'string' ? data.error : 'Failed to fetch branches')
+          throw new Error(resolveBranchFetchErrorMessage(response.status, data))
         }
 
         setBranches(Array.isArray(data.branches) ? data.branches : [])
