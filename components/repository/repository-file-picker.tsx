@@ -17,6 +17,13 @@ interface RepositoryFilesResponse {
   sourceBranch: string
 }
 
+function resolveRepositoryFilesErrorMessage(data: Record<string, unknown>) {
+  const error = typeof data.error === 'string' ? data.error : ''
+  const message = typeof data.message === 'string' ? data.message : ''
+
+  return error || message || 'Failed to fetch repository files'
+}
+
 interface FileTreeNode {
   name: string
   path: string
@@ -108,10 +115,11 @@ export default function RepositoryFilePicker({
         setError(null)
 
         const response = await fetch(`/api/repositories/${repositoryId}/files`)
-        const data: Partial<RepositoryFilesResponse> = await response.json().catch(() => ({}))
+        const data = (await response.json().catch(() => ({}))) as Partial<RepositoryFilesResponse> &
+          Record<string, unknown>
 
         if (!response.ok) {
-          throw new Error(data.error || data.message || 'Failed to fetch repository files')
+          throw new Error(resolveRepositoryFilesErrorMessage(data))
         }
 
         setFiles(Array.isArray(data.files) ? data.files : [])
@@ -150,10 +158,11 @@ export default function RepositoryFilePicker({
       setError(null)
 
       const response = await fetch(`/api/repositories/${repositoryId}/files`)
-      const data: Partial<RepositoryFilesResponse> = await response.json().catch(() => ({}))
+      const data = (await response.json().catch(() => ({}))) as Partial<RepositoryFilesResponse> &
+        Record<string, unknown>
 
       if (!response.ok) {
-        throw new Error(data.error || data.message || 'Failed to fetch repository files')
+        throw new Error(resolveRepositoryFilesErrorMessage(data))
       }
 
       setFiles(Array.isArray(data.files) ? data.files : [])
