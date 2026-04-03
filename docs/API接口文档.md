@@ -1,14 +1,14 @@
 ﻿# GitHub Global API 接口文档
 
-更新时间：2026-03-17
+更新时间：2026-04-03
 
 本文档基于当前仓库 `app/api/**/route.ts` 源码整理，用于后续联调、排障和页面开发时快速查阅。
 
 ## 统计
 
-- 路由文件数：24
-- 接口路径数：24
-- HTTP 方法总数：29
+- 路由文件数：25
+- 接口路径数：25
+- HTTP 方法总数：31
 - 主要分组：`Auth`、`GitHub App`、`Repositories`、`Tasks`、`User Settings`、`OpenRouter`、`Webhooks`、`Debug`
 
 ## 鉴权说明

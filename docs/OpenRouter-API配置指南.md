@@ -1,323 +1,214 @@
 # OpenRouter API 配置指南
 
-本指南将帮助您配置 OpenRouter API，用于 GitHub Global 的翻译功能。
+本文档用于说明如何为 GitHub Global 获取并配置 OpenRouter API Key，以及如何按当前项目真实行为验证模型与调用链路。第三方产品的具体页面、字段和入口如有变化，请以 OpenRouter 官方文档为准。
 
-## 什么是 OpenRouter？
+官方参考：
 
-OpenRouter 是一个统一的 AI 模型网关，具有以下优势：
+- [OpenRouter Authentication](https://openrouter.ai/docs/api/reference/authentication)
+- [OpenRouter API Reference Overview](https://openrouter.ai/docs/api/reference/overview)
+- [OpenRouter List available models](https://openrouter.ai/docs/api/api-reference/models/get-models)
 
-- ✅ **统一接口**：一个 API 接入 100+ 模型
-- ✅ **完全兼容**：支持 OpenAI SDK，零学习成本
-- ✅ **模型切换**：改配置即可，无需改代码
-- ✅ **自动降级**：内置 fallback 机制
-- ✅ **成本优化**：自动选择最优价格
+## 这份文档解决什么问题
 
-## 步骤 1：注册 OpenRouter 账号
+当前项目使用 OpenRouter 作为翻译模型网关，主要涉及三件事：
 
-### 1.1 访问 OpenRouter
+1. 获取可用 API Key
+2. 在项目中保存仓库级或用户级 Key
+3. 使用实时模型列表选择翻译模型
 
-打开浏览器，访问：https://openrouter.ai/
+## 当前项目里的真实行为
 
-### 1.2 创建账号
+当前实现要点：
 
-点击右上角的 **"Sign in"** 按钮。
+- OpenRouter 模型列表来自 `GET /api/openrouter/models`
+- 该接口会请求 OpenRouter 官方模型接口 `https://openrouter.ai/api/v1/models`
+- 仓库配置可以保存仓库级 OpenRouter Key
+- Settings 页面可以保存用户级 OpenRouter Key
+- 翻译执行时会优先使用仓库级 Key，再回退到用户级 Key
+- Key 在数据库中加密存储，不会以明文回写给前端
 
-您可以选择以下方式注册：
-- GitHub 登录（推荐）
-- Google OAuth
-- 邮箱注册
+相关源码：
 
-### 1.3 完成注册
+- [app/api/openrouter/models/route.ts](../app/api/openrouter/models/route.ts)
+- [app/api/user/settings/route.ts](../app/api/user/settings/route.ts)
+- [lib/translation/openrouter.ts](../lib/translation/openrouter.ts)
 
-按照页面提示完成注册流程。
+## 一、注册并登录 OpenRouter
 
-## 步骤 2：获取 API Key
+访问 [https://openrouter.ai/](https://openrouter.ai/)。
 
-### 2.1 进入设置
+OpenRouter 当前支持通过网页创建账号并登录。具体登录方式、页面结构和入口以 OpenRouter 官方当前 UI 为准。
 
-登录后，点击右上角的头像，选择 **"Settings"**。
+如果你是第一次进入，建议这样找：
 
-### 2.2 生成 API Key
+1. 打开 OpenRouter 首页
+2. 先完成登录
+3. 登录后再进入账户设置或 API Key 管理区域
+4. 如果页面结构和本文档不同，以 OpenRouter 官方文档和当前导航名称为准
 
-在左侧菜单中，选择 **"API Keys"**。
+## 二、创建 API Key
 
-点击 **"Create Key"** 按钮。
+根据 OpenRouter 官方 Authentication 文档：
 
-### 2.3 复制 API Key
+- OpenRouter 使用 Bearer Token 进行认证
+- 你可以为 key 设置名称，也可以视官方当前能力设置额度或限制
 
-输入一个描述性名称（如 "GitHub Global Dev"），点击 **"Create"**。
+建议流程：
 
-> ⚠️ **重要提示**：API Key 只显示一次，请立即复制并妥善保存！
+1. 登录 OpenRouter
+2. 打开账户设置中的 API Key 管理页面
+3. 创建一个新的 key
+4. 立即复制并保存
 
-API Key 格式类似：
-```
-sk-or-v1-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-```
+如果你是第一次操作，尽量遵循这个判断顺序：
 
-### 2.4 保存 API Key
+- 先找 account settings / settings
+- 再找 `API Keys`、`Keys` 或类似名称的页面
+- 进入后新建一条专门给本项目使用的 key
 
-将 API Key 添加到应用的仓库翻译配置中。
+项目中使用的 key 形态通常类似：
 
-**注意**：OpenRouter API Key 会在应用的数据库中加密存储，不会以明文形式保存。
-
-## 步骤 3：选择模型
-
-OpenRouter 支持 100+ 模型，访问 https://openrouter.ai/models 查看完整列表。
-
-### 3.1 推荐模型
-
-根据不同需求，推荐以下模型：
-
-#### 高质量翻译
-
-| 模型 ID | 特点 | 价格 |
-|---------|------|------|
-| `openai/gpt-4-turbo` | 最高质量，理解力强 | $$$ |
-| `anthropic/claude-3.5-sonnet` | 出色翻译能力，长文本 | $$$ |
-| `openai/gpt-4o` | 平衡质量和速度 | $$ |
-
-#### 经济型翻译
-
-| 模型 ID | 特点 | 价格 |
-|---------|------|------|
-| `openai/gpt-4o-mini` | 性价比高，速度快 | $ |
-| `google/gemini-pro-1.5` | 成本低，支持长文本 | $ |
-| `deepseek/deepseek-chat` | 超低成本，中文优秀 | ¢ |
-
-### 3.2 查看模型详情
-
-访问 https://openrouter.ai/models，您可以：
-
-- 查看每个模型的定价
-- 阅读用户评价
-- 测试模型效果
-- 查看上下文窗口大小
-
-### 3.3 配置主模型和备用模型
-
-GitHub Global 支持配置主模型和多个备用模型（fallback），当主模型失败时自动切换。
-
-**示例配置**：
-
-```json
-{
-  "model": "openai/gpt-4-turbo",
-  "fallbackModels": [
-    "openai/gpt-4o",
-    "anthropic/claude-3.5-sonnet",
-    "openai/gpt-4o-mini"
-  ],
-  "temperature": 0.3,
-  "maxTokens": 4000
-}
+```text
+sk-or-v1-...
 ```
 
-## 步骤 4：充值（可选）
+> API Key 只应保存在密码管理器或本地安全环境中，不要提交到仓库。
 
-OpenRouter 支持按使用量付费，您可以先充值再使用。
+## 三、在项目中配置 Key
 
-### 4.1 进入计费页面
+### 方案 1：仓库级 Key
 
-在 Settings 中，选择 **"Billing"**。
+适用于只想给单个仓库配置翻译能力的情况。
 
-### 4.2 添加支付方式
+操作路径：
 
-支持以下支付方式：
-- 信用卡
-- 借记卡
-- PayPal
+1. 登录应用
+2. 进入 `/repositories`
+3. 打开某个仓库的配置页
+4. 在引擎配置区域填写 OpenRouter Key 与模型
+5. 保存配置
 
-### 4.3 充值
+适合：
 
-选择充值金额，完成支付。
+- 只想给某个仓库单独配置模型或单独控制额度
+- 不希望多个仓库共用同一份 key
 
-**建议的初始充值**：
-- 测试阶段：$5-10
-- 小型项目：$20-50
-- 中型项目：$100+
+### 方案 2：用户级 Key
 
-### 4.4 设置消费限制
+适用于想让多个仓库共享同一份 OpenRouter Key 的情况。
 
-为了避免意外超支，可以设置：
-- 月度消费上限
-- 单次请求最大 Token 数
+操作路径：
 
-## 步骤 5：在应用中配置
+1. 登录应用
+2. 进入 `/settings`
+3. 保存全局 OpenRouter Key
 
-### 5.1 登录应用
+适合：
 
-1. 启动 GitHub Global 应用
-2. 使用 GitHub 登录
-3. 进入 Dashboard
+- 多个仓库共用同一份 OpenRouter 凭据
+- 希望新建仓库配置时减少重复填写
 
-### 5.2 选择仓库
+项目当前行为：
 
-在仓库列表中，点击要配置的仓库。
+- 新建仓库级引擎时，如果 Settings 中已经配置了全局 OpenRouter Key，可以允许仓库级 Key 留空
+- 翻译执行时优先使用仓库级 Key，再回退到用户级 Key
 
-### 5.3 配置翻译引擎
+## 四、选择模型
 
-在仓库配置页面，找到 **"翻译引擎"** 部分：
+模型列表来源：
 
-**配置项**：
+- 项目 UI 使用 OpenRouter 实时模型列表接口
+- 当前不再混入前端硬编码常用模型
+- 如果历史配置中的模型 ID 不在最新列表中，页面会以自定义模型形式继续显示，避免配置“消失”
 
-1. **API Key**
-   - 输入您的 OpenRouter API Key
-   - 格式：`sk-or-v1-...`
+建议流程：
 
-2. **主模型**
-   - 选择主翻译模型
-   - 推荐：`openai/gpt-4-turbo`
+1. 先通过项目内的模型列表选择当前可用模型
+2. 如果需要核对模型 ID、上下文窗口或定价，再去 OpenRouter 官方模型页查看
 
-3. **备用模型**（可选）
-   - 配置 fallback 模型
-   - 当主模型失败时自动切换
+第一次接触的人可以这样理解：
 
-4. **高级参数**
-   - Temperature：0.1-1.0（默认 0.3）
-   - Max Tokens：最大响应长度（默认 4000）
+- 模型 ID 以项目页面下拉列表里能选到的为准
+- 如果不确定选哪个，先用项目里当前可见且常见的通用模型
+- 当你需要比对价格、能力或上下文窗口时，再回到 OpenRouter 官方模型页做二次确认
 
-### 5.4 保存配置
+官方模型列表：
 
-点击 **"保存配置"** 按钮。
+- [https://openrouter.ai/models](https://openrouter.ai/models)
 
-## 步骤 6：测试翻译
+官方模型接口：
 
-### 6.1 创建测试翻译任务
+- `GET https://openrouter.ai/api/v1/models`
 
-在仓库详情页，点击 **"立即翻译"** 按钮。
+## 五、验证 API Key 与模型链路
 
-### 6.2 查看翻译结果
+### 验证项目内配置
 
-在翻译任务列表中，查看任务状态和结果。
+建议至少完成以下检查：
 
-### 6.3 检查日志
+- Settings 页面保存全局 OpenRouter Key 后，再次进入能显示 `hasOpenRouterKey`
+- 仓库配置页能够拉取模型列表
+- 保存仓库翻译配置后可以手动触发翻译任务
+- 翻译失败时，错误信息能区分 Key 无效、网络异常或模型不可用
 
-如果翻译失败，查看错误日志：
-- API Key 是否正确
-- 模型名称是否正确
-- 账户余额是否充足
+### 验证 OpenRouter 账号状态
 
-## 成本估算
+如果你想从 OpenRouter 侧确认当前 key 是否可用，可以参考官方文档中的：
 
-### 翻译成本计算
+- `GET /api/v1/key`
 
-OpenRouter 按输入和输出的 Token 数量计费。
+它用于读取当前认证会话对应 key 的信息。
 
-**示例**：翻译 1000 字英文文档
+## 六、常见问题
 
-| 模型 | 输入成本 | 输出成本 | 总成本 |
-|------|----------|----------|--------|
-| GPT-4 Turbo | $0.01 | $0.03 | $0.04 |
-| GPT-4o | $0.005 | $0.015 | $0.02 |
-| GPT-4o Mini | $0.00015 | $0.0006 | $0.00075 |
-| Claude 3.5 Sonnet | $0.003 | $0.015 | $0.018 |
+### 1. 模型列表为空
 
-**估算工具**：
-- https://openrouter.ai/?models
-- 输入预计字数，查看各模型成本
+当前项目的 `GET /api/openrouter/models` 依赖外部网络请求 OpenRouter；如果 OpenRouter 不可达，接口会返回空数组和 `500`。
 
-### 省钱技巧
+先检查：
 
-1. **使用小型模型**：大部分翻译任务 GPT-4o Mini 足够
-2. **启用增量翻译**：只翻译变更部分
-3. **设置 Token 限制**：避免过长文档消耗过多 Token
-4. **使用缓存**：相同内容不重复翻译（后续功能）
+- 本地网络是否可访问 `openrouter.ai`
+- 是否需要配置代理
+- OpenRouter 官方服务是否正常
 
-## 常见问题
+### 2. API Key 无效
 
-### Q1: API Key 无效
+常见现象：
 
-**错误**：`401 Unauthorized` 或 `Invalid API Key`
+- 保存配置后翻译时报 `401`
+- 后端日志显示 OpenRouter key 被拒绝
 
-**解决方案**：
-1. 检查 API Key 是否正确复制（以 `sk-or-v1-` 开头）
-2. 确认没有多余空格或换行
-3. 在 OpenRouter 设置中重新生成 API Key
+先检查：
 
-### Q2: 模型不可用
+- 是否完整复制了 `sk-or-v1-...`
+- 是否多了空格或换行
+- 是否误用了旧 key 或已撤销 key
 
-**错误**：`Model not found` 或 `Model not accessible`
+### 3. 模型不可用或模型名错误
 
-**解决方案**：
-1. 检查模型名称拼写（如 `openai/gpt-4-turbo`）
-2. 确认模型在 OpenRouter 上可用
-3. 访问 https://openrouter.ai/models 查看可用模型列表
+先检查：
 
-### Q3: 余额不足
+- 模型 ID 是否来自当前 OpenRouter 官方模型列表
+- 项目页面里是否已经加载到了最新实时列表
+- 历史配置是否保留了旧模型 ID
 
-**错误**：`Insufficient credits`
+### 4. 翻译超时或请求失败
 
-**解决方案**：
-1. 在 OpenRouter Billing 页面充值
-2. 检查账户余额
-3. 设置备用模型（使用更便宜的模型）
+先检查：
 
-### Q4: 超时或请求失败
+- 本地网络与代理
+- OpenRouter 服务状态
+- 当前模型是否暂时不可用
 
-**错误**：`Request timeout` 或 `504 Gateway Timeout`
+## 七、安全建议
 
-**解决方案**：
-1. 检查网络连接
-2. 减小 `maxTokens` 值
-3. 使用 fallback 模型
-4. 联系 OpenRouter 支持
+- 不要把 OpenRouter API Key 提交到仓库或文档
+- 优先通过项目页面保存 Key，避免手写到源码或常量中
+- 定期轮换长期使用的 API Key
+- 如果多人共用环境，优先使用用户级或仓库级分离的方式管理 Key
 
-### Q5: 翻译质量不佳
+## 相关文档
 
-**解决方案**：
-1. 调整 `temperature` 参数（0.1-0.5 更准确）
-2. 尝试不同的模型
-3. 在系统提示中添加更多上下文
-4. 启用翻译记忆（后续功能）
-
-## 环境变量配置（可选）
-
-如果您想使用统一的 OpenRouter API Key（不推荐，每个仓库使用独立的 Key 更安全），可以在 `.env.local` 中配置：
-
-```bash
-# OpenRouter API Key（可选，默认每个仓库单独配置）
-OPENROUTER_API_KEY="sk-or-v1-your-key-here"
-
-# 默认模型（可选）
-OPENROUTER_DEFAULT_MODEL="openai/gpt-4-turbo"
-
-# Fallback 模型（可选）
-OPENROUTER_FALLBACK_MODELS="openai/gpt-4o,openai/gpt-4o-mini"
-```
-
-## 安全建议
-
-1. **不要共享 API Key**
-   - API Key 就像密码，不要泄露给他人
-   - 不要在公开代码仓库中提交
-
-2. **定期轮换 API Key**
-   - 每隔几个月更换一次 API Key
-   - 在 OpenRouter 设置中可以撤销旧的 Key
-
-3. **监控使用情况**
-   - 定期检查 OpenRouter Dashboard
-   - 查看使用量和费用
-   - 设置消费上限
-
-4. **使用独立的 API Key**
-   - 为每个项目使用不同的 API Key
-   - 便于追踪和管理
-
-## 参考资源
-
-- [OpenRouter 官方文档](https://openrouter.ai/docs)
-- [OpenRouter 模型列表](https://openrouter.ai/models)
-- [OpenRouter 定价](https://openrouter.ai/docs#models)
-- [OpenAI SDK 文档](https://github.com/openai/openai-node)
-
-## 下一步
-
-完成 OpenRouter 配置后，您可以：
-
-1. 启动第一次翻译任务
-2. 查看翻译结果和成本
-3. 根据需要调整模型和参数
-4. 配置更多仓库的翻译
-
-祝您翻译顺利！
+- [README.md](../README.md)
+- [快速启动说明.md](快速启动说明.md)
+- [API接口文档.md](API接口文档.md)

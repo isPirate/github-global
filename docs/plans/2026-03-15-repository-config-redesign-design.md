@@ -2,6 +2,8 @@
 
 **Date:** 2026-03-15
 
+> Archived note: this is a historical design record kept for background and traceability. It does not define the current implementation on its own.
+
 **Scope:** Rework the repository translation configuration page into a default-simple, globally scalable setup flow that matches the real execution behavior and adds optional manual file selection.
 
 ## Goals
