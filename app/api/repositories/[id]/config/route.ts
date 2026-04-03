@@ -153,9 +153,6 @@ export async function POST(
       selectedFiles,
       filePatterns,
       excludePatterns,
-      targetBranchTemplate,
-      commitMessageTemplate,
-      syncStrategy,
       triggerMode,
       engine,
     } = body
@@ -259,9 +256,6 @@ export async function POST(
         selectedFiles: normalizedSelectedFiles,
         filePatterns: normalizedFilePatterns,
         excludePatterns: normalizedExcludePatterns,
-        targetBranchTemplate: targetBranchTemplate || 'i18n/{lang}',
-        commitMessageTemplate: commitMessageTemplate || 'docs: translate to {lang}',
-        syncStrategy: syncStrategy || 'full',
         triggerMode: triggerMode || 'webhook',
       },
       update: {
@@ -272,9 +266,6 @@ export async function POST(
         selectedFiles: normalizedSelectedFiles,
         filePatterns: normalizedFilePatterns,
         excludePatterns: normalizedExcludePatterns,
-        targetBranchTemplate: targetBranchTemplate || 'i18n/{lang}',
-        commitMessageTemplate: commitMessageTemplate || 'docs: translate to {lang}',
-        syncStrategy: syncStrategy || 'full',
         triggerMode: triggerMode || 'webhook',
       },
     })

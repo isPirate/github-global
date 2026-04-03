@@ -228,9 +228,6 @@
   - `selectedFiles`：手动选文件模式下使用
   - `filePatterns`：仅高级规则模式必填
   - `excludePatterns`：仅高级规则模式使用
-  - `targetBranchTemplate`
-  - `commitMessageTemplate`
-  - `syncStrategy`
   - `triggerMode`
   - `engine`：必填
 - `engine` 字段：
