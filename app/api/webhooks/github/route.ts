@@ -4,6 +4,7 @@ import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 import { translationQueue } from '@/lib/translation/queue'
 import { processTranslationTask } from '@/lib/translation/process-task'
+import { normalizeBranchName, shouldHandleBranch } from '@/lib/repository-config'
 
 type GitHubWebhookPayload = {
   action?: string
@@ -138,15 +139,15 @@ async function queueWebhookTranslationTask(params: {
   }
 
   const defaultBranch = payload.repository.default_branch || 'main'
+  const sourceBranch = normalizeBranchName(payload.ref)
 
   if (eventType === 'push') {
     if (payload.deleted) {
       return { repositoryId: repository.id, queued: false, reason: 'deleted_ref' }
     }
 
-    const expectedRef = `refs/heads/${defaultBranch}`
-    if (payload.ref !== expectedRef) {
-      return { repositoryId: repository.id, queued: false, reason: 'non_default_branch' }
+    if (!shouldHandleBranch(payload.ref, defaultBranch, repository.config?.watchedBranches)) {
+      return { repositoryId: repository.id, queued: false, reason: 'branch_not_watched' }
     }
   }
 
@@ -174,6 +175,7 @@ async function queueWebhookTranslationTask(params: {
         repositoryId: repository.id,
         triggerType: 'webhook',
         triggerCommitSha: commitSha,
+        sourceBranch,
       },
     })
 
@@ -187,6 +189,7 @@ async function queueWebhookTranslationTask(params: {
       repositoryId: repository.id,
       triggerType: 'webhook',
       triggerCommitSha: commitSha,
+      sourceBranch,
       status: 'pending',
       totalFiles: 0,
       processedFiles: 0,
@@ -206,7 +209,9 @@ async function queueWebhookTranslationTask(params: {
         deliveryId,
         ref: payload.ref || null,
         after: payload.after || null,
+        sourceBranch,
         defaultBranch,
+        watchedBranches: repository.config.watchedBranches,
         timestamp: new Date().toISOString(),
       },
     },

@@ -56,8 +56,6 @@ model GitHubAppInstallation {
   accountType          String   @map("account_type") // "user" or "organization"
   permissions          Json
   repositorySelection  String   @map("repository_selection") // "all" or "selected"
-  accessToken          String?  @map("access_token") @db.Text
-  expiresAt            DateTime? @map("expires_at")
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 
@@ -105,13 +103,11 @@ model TranslationConfig {
   repositoryId             String   @unique @map("repository_id")
   baseLanguage             String   @default("auto") @map("base_language")
   targetLanguages          Json     @map("target_languages") // ["en", "ja", "es"]
+  watchedBranches          Json     @default("[]") @map("watched_branches") // ["main", "develop"]
   scopeMode                String   @default("preset_common_docs") @map("scope_mode")
   selectedFiles            Json?    @map("selected_files")
   filePatterns             Json     @map("file_patterns") // ["**/*.md"]
   excludePatterns          Json?    @map("exclude_patterns") // ["!**/node_modules/**"]
-  targetBranchTemplate     String   @default("i18n/{lang}") @map("target_branch_template")
-  commitMessageTemplate    String   @default("docs: translate to {lang}") @map("commit_message_template")
-  syncStrategy             String   @default("full") @map("sync_strategy") // "full", "incremental", "manual"
   triggerMode              String   @default("webhook") @map("trigger_mode") // "webhook", "cron", "manual"
   createdAt                DateTime @default(now()) @map("created_at")
   updatedAt                DateTime @updatedAt @map("updated_at")
@@ -146,12 +142,12 @@ model TranslationTask {
   repositoryId      String                @map("repository_id")
   triggerType       String                @map("trigger_type") // "webhook", "manual", "cron"
   triggerCommitSha  String?               @map("trigger_commit_sha")
+  sourceBranch      String?               @map("source_branch")
   status            String                @default("pending") // "pending", "processing", "completed", "failed"
   totalFiles        Int                   @default(0) @map("total_files")
   processedFiles    Int                   @default(0) @map("processed_files")
   failedFiles       Int                   @default(0) @map("failed_files")
   totalTokens       Int                   @default(0) @map("total_tokens")
-  estimatedCost     Decimal?              @map("estimated_cost") @db.Decimal(10, 4)
   errorMessage      String?               @map("error_message") @db.Text
   startedAt         DateTime?             @map("started_at")
   completedAt       DateTime?             @map("completed_at")

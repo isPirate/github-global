@@ -1,5 +1,7 @@
 # Frontend UI Stability Fixes Implementation Plan
 
+> Archived note: this is a historical implementation plan kept for background and traceability. It does not define the current implementation on its own.
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Fix the current post-redesign UI regressions around sidebar positioning, repeated user loading states, search interactions, and task auto-refresh jitter.

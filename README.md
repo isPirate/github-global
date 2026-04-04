@@ -1,57 +1,39 @@
-﻿# GitHub Global
+# GitHub Global
 
-> 自动化翻译 GitHub 仓库文档，并统一管理仓库、任务和配置。
+自动化翻译 GitHub 仓库文档，并通过 GitHub App 管理登录、仓库授权、Webhook 与 Pull Request 流程。
 
-GitHub Global 是一个基于 Next.js 的 GitHub 仓库自动化翻译平台。当前实现采用：
+GitHub Global 是一个面向开源项目维护者和文档团队的 GitHub 文档翻译平台。它围绕 GitHub App、OpenRouter、Prisma 和 Next.js 构建，目标是把"配置翻译规则、执行翻译、追踪任务、回写 PR"收敛成一条可重复的工作流。
 
-- GitHub App user authorization 进行用户登录
-- GitHub App 进行仓库访问和 PR 操作
-- OpenRouter 作为翻译模型网关
-- Prisma + MySQL 存储用户、仓库、任务和配置数据
+## 界面预览
 
-## 当前产品形态
+<table>
+  <tr>
+    <td align="center"><b>营销首页</b></td>
+    <td align="center"><b>仓库列表</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/homepage.png" alt="营销首页" width="480" /></td>
+    <td><img src="docs/images/repositories.png" alt="仓库列表" width="480" /></td>
+  </tr>
+  <tr>
+    <td align="center"><b>仓库配置</b></td>
+    <td align="center"><b>翻译任务</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/images/repository-config.png" alt="仓库配置页" width="480" /></td>
+    <td><img src="docs/images/tasks.png" alt="翻译任务列表" width="480" /></td>
+  </tr>
+</table>
 
-- 首页：营销落地页，登录入口直接跳转 GitHub 登录
-- Dashboard：登录后总览页
-- Repositories：仓库列表、同步、配置、快速翻译
-- Tasks：任务列表、状态筛选、搜索、失败重试
-- Settings：账户、GitHub App、OpenRouter Key、偏好设置
+## 功能特性
 
-> 当前正常登录路径不再经过 `/login` 页面。
-> 请直接从首页 CTA 或 `/api/auth/signin` 进入 GitHub 登录。
-
-## 核心能力
-
-- GitHub App 登录
-- GitHub App 安装与仓库同步
-- 仓库级翻译配置
-- 预设范围 + 手动选文件的内容筛选
-- OpenRouter 翻译引擎
-- Markdown 文档翻译
-- 翻译任务追踪
-- 自动创建 Pull Request
-- 用户级 OpenRouter API Key 加密存储
-- 新仓库默认继承用户偏好中的目标语言
-- 仓库级 OpenRouter Key 可留空并回退到用户级 Key
-
-## 技术栈
-
-### 前端
-- Next.js 15 App Router
-- React 19
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-
-### 后端
-- Next.js Route Handlers
-- Prisma ORM
-- MySQL
-
-### 集成
-- GitHub App
-- OpenRouter
-- p-queue
+- **GitHub App 登录** — 基于 GitHub App user authorization 的用户认证
+- **仓库管理** — 安装 GitHub App 后自动同步授权仓库，支持启用/禁用/搜索
+- **翻译配置** — 目标语言、翻译范围（预设/手动选文件/高级规则）、监听分支、模型选择
+- **翻译执行** — 手动触发或 Webhook 自动触发，通过 OpenRouter 调用翻译模型
+- **任务追踪** — 任务列表、状态筛选、失败重试、文件级详情与 PR 链接
+- **PR 回写** — 自动创建翻译分支并提交 Pull Request，翻译结果直接回到仓库
+- **用户级 Key 回退** — 仓库级 OpenRouter Key 留空时自动回退到用户全局 Key
 
 ## 快速开始
 
@@ -63,19 +45,12 @@ npm install
 
 ### 2. 配置环境变量
 
-复制 `.env.example`：
-
 ```bash
 copy .env.example .env.local
-```
-
-然后单独创建一个最小化的 `.env`，只给 Prisma CLI 用：
-
-```bash
 Set-Content .env 'DATABASE_URL="mysql://root:password@localhost:3306/github_global"'
 ```
 
-`.env.local` 里至少需要配置这些项：
+`.env.local` 至少需要配置：
 
 ```env
 DATABASE_URL="mysql://root:password@localhost:3306/github_global"
@@ -90,13 +65,11 @@ GITHUB_APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVA
 GITHUB_APP_WEBHOOK_SECRET="your_webhook_secret"
 
 APP_BASE_URL="http://localhost:3000"
-GITHUB_APP_WEBHOOK_URL="http://localhost:3000/api/webhooks/github"
+GITHUB_APP_WEBHOOK_URL="https://your-public-domain.example.com/api/webhooks/github"
 QUEUE_CONCURRENCY=5
 ```
 
-> 当前仓库约定：
-> `.env.local` 保存应用运行时的完整配置；
-> `.env` 只保留 `DATABASE_URL`，避免维护两份完整配置。
+如果你暂时只验证登录、仓库同步和手动翻译，Webhook 可以稍后再接；但一旦启用 GitHub 事件自动触发，`GITHUB_APP_WEBHOOK_URL` 必须使用公网可访问地址。
 
 ### 3. 初始化数据库
 
@@ -105,84 +78,54 @@ npm run db:generate
 npm run db:migrate
 ```
 
-> 按当前仓库约定，数据库结构变更统一使用 Prisma Migration，不使用 `db push` 修改正式开发结构。
-
 ### 4. 启动开发服务
 
 ```bash
 npm run dev
 ```
 
-访问：
+访问 [http://localhost:3000](http://localhost:3000)。
 
-```text
-http://localhost:3000
-```
+更完整的本地启动与排障说明见 [docs/快速启动说明.md](docs/快速启动说明.md)。
 
-> 本地开发请统一使用 `localhost`，不要混用 `127.0.0.1`。
+## 使用流程
 
-## 登录与使用流程
+1. 打开首页 `/`，点击"使用 GitHub 登录"
+2. 在仓库页安装 GitHub App 并同步仓库权限
+3. 进入仓库配置页设置目标语言、翻译范围、监听分支和模型
+4. 手动触发翻译，或等待 Webhook 事件自动创建任务
+5. 在 `/tasks` 查看翻译结果、失败原因和 PR 链接
 
-1. 打开首页 `/`
-2. 点击“使用 GitHub 登录”
-3. 完成 GitHub 登录授权
-4. 系统跳转到 `/dashboard`
-5. 在仓库页安装并同步 GitHub App 仓库权限
-6. 配置翻译规则并发起翻译任务
+> 自动触发依赖 GitHub App Webhook；如果你只是本地联调登录、仓库同步和手动翻译，可以暂时不配置 Webhook。
 
-## 重要文档
+## 技术栈
 
-- [快速启动说明](./docs/快速启动说明.md)
-- [接口文档](./docs/API接口文档.md)
-- [GitHub App 配置指南](./docs/GitHub-App配置指南.md)
-- [OpenRouter API 配置指南](./docs/OpenRouter-API配置指南.md)
+- Next.js 15 App Router
+- React 19 + TypeScript
+- Tailwind CSS + shadcn/ui
+- Prisma ORM + MySQL
+- GitHub App user authorization + GitHub App installations
+- OpenRouter
+- p-queue
 
-## 项目结构
+## 文档导航
 
-```text
-app/
-  api/                  Route Handlers
-  dashboard/            总览页
-  repositories/         仓库页面
-  tasks/                任务页面
-  settings/             设置页面
-  page.tsx              首页
-components/
-  dashboard/            Dashboard 组件
-  repository/           仓库页面组件
-  tasks/                任务页面组件
-  marketing/            首页组件
-  layout/               页面骨架组件
-lib/
-  auth/                 Session 管理
-  github/               GitHub API 封装
-  translation/          翻译与队列逻辑
-  db/                   Prisma 客户端
-prisma/
-  schema.prisma
-docs/
-  各类配置与说明文档
-```
+| 文档 | 作用 |
+|------|------|
+| [docs/快速启动说明.md](docs/快速启动说明.md) | 本地从 0 到可运行的开发启动指南 |
+| [PROJECT_STATUS.md](PROJECT_STATUS.md) | 当前版本状态、近期完成项与待优化项 |
+| [docs/API接口文档.md](docs/API接口文档.md) | 现行接口契约与请求/返回结构 |
+| [docs/GitHub-App配置指南.md](docs/GitHub-App配置指南.md) | 按 GitHub 官方最新后台配置项接通 GitHub App |
+| [docs/OpenRouter-API配置指南.md](docs/OpenRouter-API配置指南.md) | 获取与配置 OpenRouter Key、模型与验证方式 |
+| [CLAUDE.md](CLAUDE.md) | 协作约定、当前实现概况和文档同步规则 |
+| [docs/需求规格文档.md](docs/需求规格文档.md) | 历史 PRD，保留产品背景与初始目标 |
+| [docs/技术实现方案文档.md](docs/技术实现方案文档.md) | 历史技术方案，保留早期架构设计背景 |
 
-## 开发命令
+## 开发与安全说明
 
-```bash
-npm run dev
-npm run build
-npm run start
-npm run lint
-npm run db:generate
-npm run db:migrate
-npm run db:push
-npm run db:studio
-```
-
-## 安全说明
-
-- 不要把 `.env`、`.env.local`、私钥文件提交到仓库
-- 不要把真实 Client Secret、Webhook Secret、数据库密码写入文档
-- GitHub App 的用户授权回调地址必须与 `GITHUB_APP_USER_CALLBACK_URL` 以及 GitHub App 后台配置完全一致
-
-## 当前状态
-
-当前代码已完成一轮前端重构，登录、仓库、任务、设置和营销首页都已经统一到同一套界面结构中。仓库配置页目前已简化为更偏开箱即用的流程：默认源语言自动识别、目标语言支持全球搜索多选、翻译范围支持预设选择与手动勾选文件，自定义模型 ID 也已回到模型选择区域内联填写。最近本地新增了一轮配置页交互优化：基准语言、目标语言搜索、引擎类型和模型选择都统一为同风格弹层列表，长列表不再直接撑满页面，并支持打开后键盘输入定位、自动滚动到当前选中项。新仓库首次进入配置页时，会优先带出用户偏好中保存的默认目标语言；如果用户已在 Settings 中配置全局 OpenRouter Key，仓库级 Key 可以留空继续保存并在执行时回退使用。当前翻译任务会默认创建分支并自动提交 PR，同时保留任务与文件历史用于追踪和排查。模型列表当前只展示从 OpenRouter 获取的实时列表，不再混入前端硬编码常用模型。任务页的自动刷新提示现已覆盖 pending 和 processing 任务，翻译任务自动创建的 PR 标题与正文乱码也已修正。当前 webhook 自动触发链路也已统一到 GitHub App 模型：只使用 GitHub App 的单个 App 级 webhook 接收事件，不再依赖仓库级 webhook；仓库配置里的“自动触发 / 仅手动运行”决定收到 GitHub App 已订阅并送达的仓库事件后是否自动创建翻译任务。`push` 事件仍只在默认分支触发自动翻译，而 `repository` 等带仓库上下文的事件也可在 GitHub App 已订阅时作为自动触发来源，便于联调测试。`installation` 与 `installation_repositories` 属于 GitHub App 默认送达事件，不需要在“Subscribe to events”里手动勾选。
+- 根目录 `.env` 仅保留 `DATABASE_URL`，供 Prisma CLI 使用
+- 完整运行时配置维护在 `.env.local`
+- 正式数据库结构变更统一使用 Prisma Migration，不使用 `prisma db push`
+- 本地开发建议统一使用 `http://localhost:3000`，不要混用 `127.0.0.1`
+- 不要提交 `.env`、`.env.local`、私钥文件或任何真实 Secret
+- GitHub App 的用户授权回调地址必须与 `GITHUB_APP_USER_CALLBACK_URL` 以及 GitHub App 后台配置一致

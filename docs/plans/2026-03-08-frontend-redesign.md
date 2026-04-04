@@ -1,5 +1,7 @@
 # Frontend Redesign Implementation Plan
 
+> Archived note: this is a historical implementation plan kept for background and traceability. It does not define the current documentation or product boundary on its own.
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Rebuild the public site and authenticated app UI to match the `.ui` reference direction while keeping the current Next.js architecture and backend integrations intact.

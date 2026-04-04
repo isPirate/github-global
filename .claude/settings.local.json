@@ -30,7 +30,9 @@
       "mcp__chrome-devtools__evaluate_script",
       "mcp__chrome-devtools__fill",
       "Bash(npx tsx:*)",
-      "Bash(ping:*)"
+      "Bash(ping:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__web-reader__webReader"
     ]
   }
 }

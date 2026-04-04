@@ -10,6 +10,20 @@ interface RepositoryFile {
   isDocumentationCandidate: boolean
 }
 
+interface RepositoryFilesResponse {
+  files: RepositoryFile[]
+  totalCount: number
+  defaultBranch: string
+  sourceBranch: string
+}
+
+function resolveRepositoryFilesErrorMessage(data: Record<string, unknown>) {
+  const error = typeof data.error === 'string' ? data.error : ''
+  const message = typeof data.message === 'string' ? data.message : ''
+
+  return error || message || 'Failed to fetch repository files'
+}
+
 interface FileTreeNode {
   name: string
   path: string
@@ -87,6 +101,7 @@ export default function RepositoryFilePicker({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
+  const [sourceBranch, setSourceBranch] = useState<string | null>(null)
   const [expandedDirectories, setExpandedDirectories] = useState<Set<string>>(new Set(['']))
 
   useEffect(() => {
@@ -100,13 +115,15 @@ export default function RepositoryFilePicker({
         setError(null)
 
         const response = await fetch(`/api/repositories/${repositoryId}/files`)
-        const data = await response.json().catch(() => ({}))
+        const data = (await response.json().catch(() => ({}))) as Partial<RepositoryFilesResponse> &
+          Record<string, unknown>
 
         if (!response.ok) {
-          throw new Error(data.error || data.message || 'Failed to fetch repository files')
+          throw new Error(resolveRepositoryFilesErrorMessage(data))
         }
 
         setFiles(Array.isArray(data.files) ? data.files : [])
+        setSourceBranch(typeof data.sourceBranch === 'string' ? data.sourceBranch : null)
       } catch (fetchError) {
         setError(fetchError instanceof Error ? fetchError.message : 'Failed to fetch repository files')
       } finally {
@@ -141,13 +158,15 @@ export default function RepositoryFilePicker({
       setError(null)
 
       const response = await fetch(`/api/repositories/${repositoryId}/files`)
-      const data = await response.json().catch(() => ({}))
+      const data = (await response.json().catch(() => ({}))) as Partial<RepositoryFilesResponse> &
+        Record<string, unknown>
 
       if (!response.ok) {
-        throw new Error(data.error || data.message || 'Failed to fetch repository files')
+        throw new Error(resolveRepositoryFilesErrorMessage(data))
       }
 
       setFiles(Array.isArray(data.files) ? data.files : [])
+      setSourceBranch(typeof data.sourceBranch === 'string' ? data.sourceBranch : null)
     } catch (fetchError) {
       setError(fetchError instanceof Error ? fetchError.message : 'Failed to fetch repository files')
     } finally {
@@ -232,7 +251,10 @@ export default function RepositoryFilePicker({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="text-sm font-medium">手动选择翻译文件</div>
-          <div className="text-sm text-muted-foreground">当前已选择 {selectedFiles.length} 个文件</div>
+          <div className="text-sm text-muted-foreground">
+            当前已选择 {selectedFiles.length} 个文件
+            {sourceBranch ? `，文件列表来自 ${sourceBranch} 分支` : ''}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <button

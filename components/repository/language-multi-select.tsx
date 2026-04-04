@@ -22,7 +22,10 @@ export default function LanguageMultiSelect({
   )
 
   const selectedLanguages = useMemo(
-    () => availableLanguages.filter((language) => selectedCodes.includes(language.code)),
+    () =>
+      selectedCodes
+        .map((code) => availableLanguages.find((language) => language.code === code))
+        .filter((language): language is (typeof availableLanguages)[number] => Boolean(language)),
     [availableLanguages, selectedCodes]
   )
 

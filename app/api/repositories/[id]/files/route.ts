@@ -2,7 +2,7 @@
 import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/db/prisma'
 import { getGitHubAppManager } from '@/lib/github/app'
-import { isLikelyTranslatableDocument } from '@/lib/repository-config'
+import { isLikelyTranslatableDocument, resolvePreferredBranch } from '@/lib/repository-config'
 
 type RouteContext = {
   params: Promise<{ id: string }>
@@ -38,6 +38,7 @@ export async function GET(
       },
       include: {
         installation: true,
+        config: true,
       },
     })
 
@@ -55,11 +56,12 @@ export async function GET(
 
     const { data: repoData } = await octokit.rest.repos.get({ owner, repo })
     const defaultBranch = repoData.default_branch || 'main'
+    const sourceBranch = resolvePreferredBranch(defaultBranch, repository.config?.watchedBranches)
 
     const { data: refData } = await octokit.rest.git.getRef({
       owner,
       repo,
-      ref: `heads/${defaultBranch}`,
+      ref: `heads/${sourceBranch}`,
     })
 
     const { data: treeData } = await octokit.rest.git.getTree({
@@ -89,6 +91,7 @@ export async function GET(
       files,
       totalCount: files.length,
       defaultBranch,
+      sourceBranch,
     })
   } catch (error) {
     console.error('[API] Error fetching repository files:', error)

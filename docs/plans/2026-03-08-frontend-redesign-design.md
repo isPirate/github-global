@@ -1,5 +1,7 @@
 # Frontend Redesign Design
 
+> Archived note: this is a historical design record kept for background and traceability. It does not define the current implementation on its own.
+
 **Date:** 2026-03-08
 
 **Scope:** Replan the full frontend, including the marketing site and the authenticated application, using the `.ui` reference as the primary visual and structural direction while preserving the current Next.js app architecture and backend integrations.

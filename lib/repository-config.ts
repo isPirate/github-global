@@ -47,6 +47,50 @@ export function sanitizeSelectedFiles(value: unknown) {
   return sanitizeStringList(value).filter((item) => !item.startsWith('/'))
 }
 
+export function normalizeBranchName(value: unknown) {
+  if (typeof value !== 'string') {
+    return ''
+  }
+
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return ''
+  }
+
+  return trimmed.replace(/^refs\/heads\//, '')
+}
+
+export function sanitizeWatchedBranches(value: unknown) {
+  return Array.from(
+    new Set(
+      sanitizeStringList(value)
+        .map((branch) => normalizeBranchName(branch))
+        .filter(Boolean)
+    )
+  )
+}
+
+export function resolvePreferredBranch(defaultBranch: string, watchedBranches: unknown) {
+  const normalizedDefaultBranch = normalizeBranchName(defaultBranch) || 'main'
+  const branches = sanitizeWatchedBranches(watchedBranches)
+
+  return branches[0] || normalizedDefaultBranch
+}
+
+export function shouldHandleBranch(ref: string | null | undefined, defaultBranch: string, watchedBranches: unknown) {
+  const normalizedRef = normalizeBranchName(ref)
+  if (!normalizedRef) {
+    return false
+  }
+
+  const branches = sanitizeWatchedBranches(watchedBranches)
+  if (branches.length === 0) {
+    return normalizedRef === resolvePreferredBranch(defaultBranch, [])
+  }
+
+  return branches.includes(normalizedRef)
+}
+
 function normalizePatterns(value: unknown) {
   return sanitizeStringList(value)
 }

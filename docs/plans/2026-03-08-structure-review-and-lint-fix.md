@@ -1,5 +1,7 @@
 # Structure Review And Lint Fix Implementation Plan
 
+> Archived note: this is a historical implementation plan kept for background and traceability. It does not define the current implementation on its own.
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Review the current project structure, make minimal low-risk structural cleanups, fix the current lint failures, and produce a review-oriented technical change record.

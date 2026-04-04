@@ -2,6 +2,8 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
+> Archived note: this is a historical implementation plan kept for background and traceability. It does not define the current implementation on its own.
+
 **Goal:** Rebuild the repository configuration flow into a default-simple setup page that supports global language selection, preset-based content scope, and optional manual file selection while aligning the UI with the real translation execution behavior.
 
 **Architecture:** Keep the existing Next.js App Router and repository config route shape, but extend `TranslationConfig` with an explicit content-scope model and add a repository file-list endpoint for manual file picking. The work should remove misleading UI fields from the default path, preserve backward compatibility for existing saved configurations, and update the translation processor to honor the new scope model at runtime.

@@ -18,6 +18,7 @@ interface TranslationTask {
   id: string
   repositoryId: string
   triggerType: string
+  sourceBranch?: string | null
   status: 'pending' | 'processing' | 'completed' | 'failed'
   totalFiles: number
   processedFiles: number
