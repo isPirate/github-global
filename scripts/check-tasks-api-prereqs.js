@@ -35,7 +35,7 @@ assert(
 
 assert(
   !tasksRoute.includes("mode: 'insensitive'") && !tasksRoute.includes('mode: "insensitive"'),
-  'Tasks API still uses mode: insensitive, which is not portable for MySQL'
+  'Tasks API still uses mode: insensitive filter, verify this is intentional for PostgreSQL'
 )
 
 assert(

@@ -27,7 +27,7 @@ GitHub Global 是一个 GitHub 仓库自动化翻译平台，使用 AI 将仓库
 - Next.js 15（App Router）+ TypeScript
 - React 19
 - Tailwind CSS + shadcn/ui
-- MySQL + Prisma ORM
+- Supabase（托管 PostgreSQL）+ Prisma ORM
 - GitHub App user authorization（用户登录）
 - GitHub App（仓库访问、Webhook、PR 操作）
 - OpenRouter（翻译模型网关）
@@ -145,11 +145,11 @@ docs/
 ## 重要约定
 
 - GitHub App ID：`2890267`
-- 数据库：MySQL `github_global`
+- 数据库：Supabase（托管 PostgreSQL）
 - 纯本地开发建议使用 `http://localhost:3000`
 - 若通过 ngrok 域名访问，`GITHUB_APP_USER_CALLBACK_URL` 必须与 GitHub App 后台配置完全一致
 - 当前环境变量以 `APP_BASE_URL`、`GITHUB_APP_WEBHOOK_URL`、`GITHUB_APP_SLUG` 为准，不再使用旧的 `APP_URL`、`GITHUB_APP_NAME`、`NEXTAUTH_*`
-- 当前仓库约定 `.env.local` 保存完整应用配置，根目录 `.env` 仅保留 `DATABASE_URL` 供 Prisma CLI 使用
+- 当前仓库约定 `.env.local` 保存完整应用配置，根目录 `.env` 仅保留 `DATABASE_URL` 和 `DIRECT_URL` 供 Prisma CLI 使用
 - 核实中文文档、注释或 schema 是否乱码时，必须先使用 UTF-8 显式读取文件内容再判断；不要仅凭终端默认编码下的显示结果认定文件本身存在乱码
 - Webhook 必须验证签名
 - OpenRouter API Key 必须加密存储
@@ -164,13 +164,13 @@ docs/
 
 ### 数据库变更规则
 
-- 禁止使用 `npx prisma db push` 修改正式开发结构
-- 必须使用 `npx prisma migrate dev --name <migration_name>` 生成 migration
-- 所有数据库变更都必须有对应的 migration 文件
+- 修改 `prisma/schema.prisma` 后，使用 `npx prisma db push` 同步到 Supabase
+- 如果需要生成 migration 文件，确保 `DIRECT_URL` 可直连数据库时使用 `npx prisma migrate dev --name <name>`
+- 所有数据库变更都应先在 `schema.prisma` 中修改，再推送到数据库
 - 如果出现 `Drift detected`：
   1. 不要重置数据库
-  2. 手动创建 migration 文件
-  3. 使用 `npx prisma migrate resolve --applied <migration_name>` 标记状态
+  2. 检查 `schema.prisma` 与实际表结构差异
+  3. 使用 `npx prisma db push` 同步
 
 ## 常用命令
 

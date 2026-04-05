@@ -4,7 +4,7 @@
 
 ## 版本摘要
 
-- 更新时间：2026-04-03
+- 更新时间：2026-04-05
 - 当前判断：主流程闭环已完成，当前版本已经具备可演示、可联调、可继续收口的产品基础
 - 当前文档入口：
   - `README.md`：外部入口
@@ -25,6 +25,7 @@
 - Webhook 自动触发已统一到 GitHub App 单个 App 级 webhook，不再依赖仓库级 webhook
 - 翻译任务会按任务来源分支创建翻译分支并回写 PR，同时保留任务和文件历史
 - 任务页自动刷新提示已覆盖 `pending` 和 `processing` 状态
+- 数据库已从本地 MySQL 迁移到 Supabase（托管 PostgreSQL），Prisma ORM 保持不变，业务代码零改动
 - 最近一轮数据模型收口已移除不再实际生效的配置与安装字段：
   - `github_app_installations.access_token`
   - `github_app_installations.expires_at`
@@ -148,6 +149,7 @@
 - 纯本地开发建议使用 `http://localhost:3000`
 - 如果通过 ngrok 域名访问，`GITHUB_APP_USER_CALLBACK_URL` 必须与 GitHub App 后台配置完全一致
 - GitHub App 安装链接统一以 `GITHUB_APP_SLUG` 为准，Webhook 地址统一以 `GITHUB_APP_WEBHOOK_URL` 为准
-- 根目录 `.env` 仅保留 `DATABASE_URL`，完整应用配置统一维护在 `.env.local`
+- 根目录 `.env` 保留 `DATABASE_URL` 和 `DIRECT_URL`，完整应用配置统一维护在 `.env.local`
+- 数据库为 Supabase 托管 PostgreSQL，schema 变更通过 `npx prisma db push` 同步
 - 接口改动后同步维护 `docs/API接口文档.md`
 - 历史方案文档只保留背景价值，不再作为当前实现依据

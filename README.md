@@ -47,13 +47,20 @@ npm install
 
 ```bash
 copy .env.example .env.local
-Set-Content .env 'DATABASE_URL="mysql://root:password@localhost:3306/github_global"'
+```
+
+根目录 `.env` 仅保留 Prisma CLI 需要的数据库连接，与 `.env.local` 中的 `DATABASE_URL` 和 `DIRECT_URL` 保持一致：
+
+```env
+DATABASE_URL="postgres://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgres://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres"
 ```
 
 `.env.local` 至少需要配置：
 
 ```env
-DATABASE_URL="mysql://root:password@localhost:3306/github_global"
+DATABASE_URL="postgres://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgres://postgres.<project-ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres"
 ENCRYPTION_KEY="your-64-char-hex-key"
 
 GITHUB_APP_ID="your_github_app_id"
@@ -75,7 +82,7 @@ QUEUE_CONCURRENCY=5
 
 ```bash
 npm run db:generate
-npm run db:migrate
+npx prisma db push
 ```
 
 ### 4. 启动开发服务
@@ -103,7 +110,7 @@ npm run dev
 - Next.js 15 App Router
 - React 19 + TypeScript
 - Tailwind CSS + shadcn/ui
-- Prisma ORM + MySQL
+- Prisma ORM + Supabase PostgreSQL
 - GitHub App user authorization + GitHub App installations
 - OpenRouter
 - p-queue
@@ -125,7 +132,7 @@ npm run dev
 
 - 根目录 `.env` 仅保留 `DATABASE_URL`，供 Prisma CLI 使用
 - 完整运行时配置维护在 `.env.local`
-- 正式数据库结构变更统一使用 Prisma Migration，不使用 `prisma db push`
+- 数据库使用 Supabase 托管 PostgreSQL，schema 变更通过 `npx prisma db push` 同步
 - 本地开发建议统一使用 `http://localhost:3000`，不要混用 `127.0.0.1`
 - 不要提交 `.env`、`.env.local`、私钥文件或任何真实 Secret
 - GitHub App 的用户授权回调地址必须与 `GITHUB_APP_USER_CALLBACK_URL` 以及 GitHub App 后台配置一致

@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // 用户表
@@ -16,12 +17,12 @@ model User {
   githubId          String   @unique @map("github_id")
   username          String
   email             String?
-  avatarUrl         String?  @map("avatar_url") @db.Text
-  githubUserAccessToken String? @map("github_user_access_token") @db.Text
+  avatarUrl         String?  @map("avatar_url")
+  githubUserAccessToken String? @map("github_user_access_token")
   githubUserAccessTokenExpiresAt DateTime? @map("github_user_access_token_expires_at")
-  githubUserRefreshToken String? @map("github_user_refresh_token") @db.Text
+  githubUserRefreshToken String? @map("github_user_refresh_token")
   githubUserRefreshTokenExpiresAt DateTime? @map("github_user_refresh_token_expires_at")
-  githubUserTokenScope String? @map("github_user_token_scope") @db.Text
+  githubUserTokenScope String? @map("github_user_token_scope")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
@@ -37,7 +38,7 @@ model UserSettings {
   id                     String   @id @default(uuid())
   userId                 String   @unique @map("user_id")
   defaultTargetLanguages Json     @default("[]") @map("default_target_languages")
-  encryptedOpenRouterKey String?  @map("encrypted_openrouter_key") @db.Text
+  encryptedOpenRouterKey String?  @map("encrypted_openrouter_key")
   createdAt              DateTime @default(now()) @map("created_at")
   updatedAt              DateTime @updatedAt @map("updated_at")
 
@@ -123,7 +124,7 @@ model TranslationEngine {
   id              String   @id @default(uuid())
   repositoryId    String   @map("repository_id")
   engineType      String   @map("engine_type") // "openrouter", "openai", etc.
-  encryptedApiKey String   @map("encrypted_api_key") @db.Text
+  encryptedApiKey String   @map("encrypted_api_key")
   config          Json     // { model: "openai/gpt-4-turbo", temperature: 0.3 }
   isActive        Boolean  @default(true) @map("is_active")
   createdAt       DateTime @default(now()) @map("created_at")
@@ -148,7 +149,7 @@ model TranslationTask {
   processedFiles    Int                   @default(0) @map("processed_files")
   failedFiles       Int                   @default(0) @map("failed_files")
   totalTokens       Int                   @default(0) @map("total_tokens")
-  errorMessage      String?               @map("error_message") @db.Text
+  errorMessage      String?               @map("error_message")
   startedAt         DateTime?             @map("started_at")
   completedAt       DateTime?             @map("completed_at")
   createdAt         DateTime              @default(now()) @map("created_at")
@@ -172,10 +173,10 @@ model TranslationFile {
   filePath              String    @map("file_path") @db.VarChar(500)
   targetLanguage        String    @map("target_language")
   status                String    @default("pending") // "pending", "processing", "completed", "failed"
-  sourceContentHash     String?   @map("source_content_hash") @db.Text
-  translatedContentHash String?   @map("translated_content_hash") @db.Text
+  sourceContentHash     String?   @map("source_content_hash")
+  translatedContentHash String?   @map("translated_content_hash")
   tokensUsed            Int       @default(0) @map("tokens_used")
-  errorMessage          String?   @map("error_message") @db.Text
+  errorMessage          String?   @map("error_message")
   prNumber              Int?      @map("pr_number")
   startedAt             DateTime? @map("started_at")
   completedAt           DateTime? @map("completed_at")
@@ -217,7 +218,7 @@ model WebhookEvent {
   eventType        String    @map("event_type") // "push", "installation", etc.
   payload          Json
   processed        Boolean   @default(false)
-  errorMessage     String?   @map("error_message") @db.Text
+  errorMessage     String?   @map("error_message")
   receivedAt       DateTime  @default(now()) @map("received_at")
   processedAt      DateTime? @map("processed_at")
 

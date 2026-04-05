@@ -31,8 +31,10 @@
       "mcp__chrome-devtools__fill",
       "Bash(npx tsx:*)",
       "Bash(ping:*)",
-      "mcp__context7__resolve-library-id",
-      "mcp__web-reader__webReader"
+      "mcp__web-reader__webReader",
+      "mcp__context7__*",
+      "mcp__plugin_supabase_supabase__*",
+      "Bash(npx prisma:*)"
     ]
   }
 }
