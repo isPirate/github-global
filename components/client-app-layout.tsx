@@ -142,8 +142,18 @@ export default function ClientAppLayout({
             onMenuClick={() => setSidebarOpen(true)}
           />
 
-          <main className="flex-1 pb-24 lg:pb-8">
+          <main className="flex-1 pb-24 lg:pb-0">
             <div className="page-container py-[var(--page-y)]">{children}</div>
+            <div className="hidden border-t border-border/40 pb-4 pt-6 text-center text-xs text-muted-foreground lg:block">
+              <a
+                href="https://beian.miit.gov.cn"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-foreground"
+              >
+                皖ICP备2026009215号-1
+              </a>
+            </div>
           </main>
         </div>
       </div>
