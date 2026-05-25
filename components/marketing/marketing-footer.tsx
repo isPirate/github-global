@@ -41,6 +41,17 @@ export function MarketingFooter() {
           ))}
         </div>
       </div>
+
+      <div className="page-container mt-8 border-t border-border/40 pt-6 text-center text-sm text-slate-400">
+        <a
+          href="https://beian.miit.gov.cn"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-white"
+        >
+          皖ICP备2026009215号-1
+        </a>
+      </div>
     </footer>
   )
 }
