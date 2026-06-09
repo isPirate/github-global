@@ -144,15 +144,30 @@ export default function ClientAppLayout({
 
           <main className="flex-1 pb-24 lg:pb-0">
             <div className="page-container py-[var(--page-y)]">{children}</div>
-            <div className="hidden border-t border-border/40 pb-4 pt-6 text-center text-xs text-muted-foreground lg:block">
-              <a
-                href="https://beian.miit.gov.cn"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-foreground"
-              >
-                皖ICP备2026009215号-1
-              </a>
+            <div className="hidden border-t border-border/40 pb-4 pt-6 text-xs text-muted-foreground lg:block">
+              <div className="flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-4">
+                <a
+                  href="https://beian.mps.gov.cn/#/query/webSearch?code=34162102003426"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 hover:text-foreground"
+                >
+                  <img
+                    src="/beian-icon.png"
+                    alt="公安备案"
+                    className="h-3.5 w-3.5"
+                  />
+                  皖公网安备34162102003426号
+                </a>
+                <a
+                  href="https://beian.miit.gov.cn"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground"
+                >
+                  皖ICP备2026009215号-1
+                </a>
+              </div>
             </div>
           </main>
         </div>
