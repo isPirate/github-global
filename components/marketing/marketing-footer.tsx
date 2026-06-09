@@ -42,15 +42,30 @@ export function MarketingFooter() {
         </div>
       </div>
 
-      <div className="page-container mt-8 border-t border-border/40 pt-6 text-center text-sm text-slate-400">
-        <a
-          href="https://beian.miit.gov.cn"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:text-white"
-        >
-          皖ICP备2026009215号-1
-        </a>
+      <div className="page-container mt-8 border-t border-border/40 pt-6">
+        <div className="flex flex-col items-center justify-center gap-3 text-sm text-slate-400 sm:flex-row sm:gap-6">
+          <a
+            href="https://beian.mps.gov.cn/#/query/webSearch?code=34162102003426"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 hover:text-white"
+          >
+            <img
+              src="/beian-icon.png"
+              alt="公安备案"
+              className="h-4 w-4"
+            />
+            皖公网安备34162102003426号
+          </a>
+          <a
+            href="https://beian.miit.gov.cn"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-white"
+          >
+            皖ICP备2026009215号-1
+          </a>
+        </div>
       </div>
     </footer>
   )
